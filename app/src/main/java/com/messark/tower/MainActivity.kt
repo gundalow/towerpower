@@ -1,4 +1,4 @@
-package com.example.app
+package com.messark.tower
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,10 +10,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.example.app.ui.components.GameBoard
-import com.example.app.ui.components.GameControlPanel
-import com.example.app.ui.constants.LayoutConstants
-import com.example.app.ui.theme.ExampleAppTheme
+import com.messark.tower.ui.components.GameBoard
+import com.messark.tower.ui.components.GameControlPanel
+import com.messark.tower.ui.constants.LayoutConstants
+import com.messark.tower.ui.theme.TowerPowerTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ExampleAppTheme {
+            TowerPowerTheme {
                 val gameState by viewModel.gameState.collectAsState()
                 val availableTowers by viewModel.availableTowers.collectAsState()
 

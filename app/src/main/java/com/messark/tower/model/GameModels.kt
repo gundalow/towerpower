@@ -1,4 +1,4 @@
-package com.example.app.model
+package com.messark.tower.model
 
 import androidx.compose.ui.graphics.Color
 

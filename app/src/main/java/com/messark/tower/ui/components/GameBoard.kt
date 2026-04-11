@@ -1,4 +1,4 @@
-package com.example.app.ui.components
+package com.messark.tower.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -14,8 +14,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import com.example.app.model.CellType
-import com.example.app.model.GridCell
+import com.messark.tower.model.CellType
+import com.messark.tower.model.GridCell
 
 @Composable
 fun GameBoard(

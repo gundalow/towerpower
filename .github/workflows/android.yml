@@ -35,4 +35,5 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: Release v1.0.${{ github.run_number }}
           generate_release_notes: true
+          make_latest: true
           files: app/build/outputs/apk/release/app-release.apk

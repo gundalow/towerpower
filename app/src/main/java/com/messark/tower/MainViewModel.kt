@@ -1,9 +1,9 @@
-package com.example.app
+package com.messark.tower
 
 import android.app.Application
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
-import com.example.app.model.*
+import com.messark.tower.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

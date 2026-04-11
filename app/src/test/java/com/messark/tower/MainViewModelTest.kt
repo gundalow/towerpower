@@ -1,4 +1,4 @@
-package com.example.app
+package com.messark.tower
 
 import android.app.Application
 import io.mockk.mockk
