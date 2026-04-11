@@ -65,6 +65,7 @@ fun GameBoard(
                         CellType.PATH -> Color(0xFF795548)
                         CellType.START -> Color(0xFFF44336)
                         CellType.END -> Color(0xFF2196F3)
+                        CellType.BOULDER -> Color(0xFF5D4037) // Dark brown for boulders
                     }
                     drawRect(
                         color = color,

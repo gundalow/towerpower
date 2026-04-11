@@ -1,6 +1,8 @@
 package com.messark.tower
 
 import android.app.Application
+import com.messark.tower.utils.SettingsRepository
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,8 +27,10 @@ class MainViewModelTest {
     @Test
     fun `gameState is initialized correctly`() = runBlocking {
         val application = mockk<Application>()
+        val settingsRepository = mockk<SettingsRepository>()
+        every { settingsRepository.settingsFlow } returns kotlinx.coroutines.flow.flowOf(com.messark.tower.model.Settings())
 
-        val viewModel = MainViewModel(application)
+        val viewModel = MainViewModel(application, settingsRepository)
         val state = viewModel.gameState.first()
 
         assertNotNull(state.grid)

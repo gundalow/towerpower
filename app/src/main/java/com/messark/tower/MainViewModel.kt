@@ -6,14 +6,19 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.messark.tower.model.*
 import com.messark.tower.utils.Pathfinding
+import com.messark.tower.utils.SettingsRepository
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.util.*
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+class MainViewModel(
+    application: Application,
+    private val settingsRepository: SettingsRepository = SettingsRepository(application)
+) : AndroidViewModel(application) {
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
 
@@ -30,9 +35,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val availableTowers: StateFlow<List<Tower>> = _availableTowers.asStateFlow()
 
     private var gameJob: Job? = null
+    private var lastHapticTimeMs = 0L
+
+    private val _hapticEvents = MutableSharedFlow<Unit>()
+    val hapticEvents: SharedFlow<Unit> = _hapticEvents.asSharedFlow()
 
     init {
-        initializeGrid(10, 20) // Default grid size
+        initializeGrid(8, 8) // Start with 8x8 as requested
         startGameLoop()
     }
 
@@ -56,8 +65,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             endPos = edges[random.nextInt(edges.size)]
         } while (getEdgeDistance(startPos, endPos, columns, rows) < 5)
 
-        val newGrid = List(rows) { y ->
-            List(columns) { x ->
+        val boulderCount = (columns * rows) / 8
+        var bouldersPlaced = 0
+        val tempGrid = MutableList(rows) { y ->
+            MutableList(columns) { x ->
                 val type = when {
                     x == startPos.x && y == startPos.y -> CellType.START
                     x == endPos.x && y == endPos.y -> CellType.END
@@ -67,8 +78,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        while (bouldersPlaced < boulderCount) {
+            val bx = random.nextInt(columns)
+            val by = random.nextInt(rows)
+            if (tempGrid[by][bx].type == CellType.EMPTY) {
+                // Try placing boulder
+                tempGrid[by][bx] = tempGrid[by][bx].copy(type = CellType.BOULDER)
+
+                // Check if path still exists
+                val blocked = mutableSetOf<Position>()
+                tempGrid.forEach { row ->
+                    row.forEach { cell ->
+                        if (cell.type == CellType.BOULDER) blocked.add(cell.position)
+                    }
+                }
+
+                val path = Pathfinding.findPath(startPos, endPos, columns, rows, blocked)
+                if (path != null) {
+                    bouldersPlaced++
+                } else {
+                    // Revert
+                    tempGrid[by][bx] = tempGrid[by][bx].copy(type = CellType.EMPTY)
+                }
+            }
+        }
+
         _gameState.update { it.copy(
-            grid = newGrid,
+            grid = tempGrid,
             startPosition = startPos,
             endPosition = endPos
         ) }
@@ -136,7 +172,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     getBlockedPositions(state.grid, -1, -1)
                 ) ?: emptyList()
 
-                val enemyHealth = 50 + (state.currentWave - 1) * 20
+                val enemyHealth = 50 + (state.currentWave - 1) * 10
                 val newEnemy = Enemy(
                     id = UUID.randomUUID().toString(),
                     health = enemyHealth,
@@ -263,6 +299,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val newHealth = enemy.health - damageTaken
                     if (newHealth <= 0) {
                         newState = newState.copy(gold = newState.gold + enemy.reward)
+                        // Trigger haptic if not throttled
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastHapticTimeMs >= 1000) {
+                            viewModelScope.launch {
+                                val settings = settingsRepository.settingsFlow.first()
+                                if (settings.hapticEnabled) {
+                                    _hapticEvents.emit(Unit)
+                                }
+                            }
+                            lastHapticTimeMs = currentTime
+                        }
                         enemy.copy(health = 0, isDead = true)
                     } else {
                         enemy.copy(health = newHealth)
@@ -324,12 +371,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val blocked = mutableSetOf<Position>()
         grid.forEach { row ->
             row.forEach { cell ->
-                if (cell.tower != null) {
+                if (cell.tower != null || cell.type == CellType.BOULDER) {
                     blocked.add(cell.position)
                 }
             }
         }
-        blocked.add(Position(newX, newY))
+        if (newX != -1 && newY != -1) {
+            blocked.add(Position(newX, newY))
+        }
         return blocked
     }
 }
