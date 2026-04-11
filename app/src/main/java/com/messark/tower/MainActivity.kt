@@ -37,6 +37,8 @@ class MainActivity : ComponentActivity() {
                     ) {
                         GameBoard(
                             grid = gameState.grid,
+                            enemies = gameState.enemies,
+                            projectiles = gameState.projectiles,
                             onCellClick = { x, y -> viewModel.onCellClick(x, y) },
                             modifier = Modifier.weight(LayoutConstants.BOARD_HEIGHT_FRACTION)
                         )
@@ -46,6 +48,8 @@ class MainActivity : ComponentActivity() {
                             availableTowers = availableTowers,
                             selectedTower = gameState.selectedTowerType,
                             onTowerSelected = { tower -> viewModel.selectTower(tower) },
+                            onStartWave = { viewModel.startWave() },
+                            waveActive = gameState.waveActive,
                             modifier = Modifier.weight(LayoutConstants.CONTROL_PANEL_HEIGHT_FRACTION)
                         )
                     }

@@ -15,11 +15,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.messark.tower.model.CellType
+import com.messark.tower.model.Enemy
 import com.messark.tower.model.GridCell
+import com.messark.tower.model.Projectile
 
 @Composable
 fun GameBoard(
     grid: List<List<GridCell>>,
+    enemies: List<Enemy>,
+    projectiles: List<Projectile>,
     onCellClick: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -85,6 +89,47 @@ fun GameBoard(
                         )
                     }
                 }
+            }
+
+            // Draw enemies
+            enemies.forEach { enemy ->
+                val centerX = enemy.position.x * cellSizePx + cellSizePx / 2
+                val centerY = enemy.position.y * cellSizePx + cellSizePx / 2
+
+                // Enemy body
+                drawCircle(
+                    color = Color.Red,
+                    radius = cellSizePx * 0.3f,
+                    center = Offset(centerX, centerY)
+                )
+
+                // Health bar
+                val barWidth = cellSizePx * 0.6f
+                val barHeight = 4.dp.toPx()
+                val healthPercent = enemy.health.toFloat() / enemy.maxHealth
+
+                drawRect(
+                    color = Color.Black,
+                    topLeft = Offset(centerX - barWidth / 2, centerY - cellSizePx * 0.5f),
+                    size = Size(barWidth, barHeight)
+                )
+                drawRect(
+                    color = Color.Green,
+                    topLeft = Offset(centerX - barWidth / 2, centerY - cellSizePx * 0.5f),
+                    size = Size(barWidth * healthPercent, barHeight)
+                )
+            }
+
+            // Draw projectiles
+            projectiles.forEach { projectile ->
+                val centerX = projectile.position.x * cellSizePx + cellSizePx / 2
+                val centerY = projectile.position.y * cellSizePx + cellSizePx / 2
+
+                drawCircle(
+                    color = projectile.color,
+                    radius = 4.dp.toPx(),
+                    center = Offset(centerX, centerY)
+                )
             }
         }
     }
