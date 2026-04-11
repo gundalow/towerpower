@@ -7,9 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.messark.tower.ui.components.GameBoard
 import com.messark.tower.ui.components.GameControlPanel
 import com.messark.tower.ui.constants.LayoutConstants
@@ -25,6 +28,13 @@ class MainActivity : ComponentActivity() {
             TowerPowerTheme {
                 val gameState by viewModel.gameState.collectAsState()
                 val availableTowers by viewModel.availableTowers.collectAsState()
+                val haptic = LocalHapticFeedback.current
+
+                LaunchedEffect(Unit) {
+                    viewModel.hapticEvents.collect {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize()

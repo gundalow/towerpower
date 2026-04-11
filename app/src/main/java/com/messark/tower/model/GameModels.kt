@@ -7,7 +7,7 @@ data class Position(val x: Int, val y: Int)
 data class PrecisePosition(val x: Float, val y: Float)
 
 enum class CellType {
-    EMPTY, PATH, START, END
+    EMPTY, PATH, START, END, BOULDER
 }
 
 data class GridCell(
