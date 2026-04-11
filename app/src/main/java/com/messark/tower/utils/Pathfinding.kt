@@ -1,20 +1,21 @@
 package com.messark.tower.utils
 
-import com.messark.tower.model.Position
+import com.messark.tower.model.AxialCoordinate
 import java.util.*
 
 object Pathfinding {
     fun findPath(
-        start: Position,
-        end: Position,
-        gridWidth: Int,
-        gridHeight: Int,
-        blockedPositions: Set<Position>
-    ): List<Position>? {
+        start: AxialCoordinate,
+        end: AxialCoordinate,
+        blockedPositions: Set<AxialCoordinate>,
+        allCoordinates: Set<AxialCoordinate>
+    ): List<AxialCoordinate>? {
+        if (start == end) return listOf(start)
+
         val openSet = PriorityQueue<Node>(compareBy { it.fScore })
-        val openSetPositions = mutableSetOf<Position>()
-        val closedSet = mutableSetOf<Position>()
-        val nodes = mutableMapOf<Position, Node>()
+        val openSetPositions = mutableSetOf<AxialCoordinate>()
+        val closedSet = mutableSetOf<AxialCoordinate>()
+        val nodes = mutableMapOf<AxialCoordinate, Node>()
 
         val startNode = Node(start, gScore = 0, hScore = heuristic(start, end))
         openSet.add(startNode)
@@ -23,16 +24,17 @@ object Pathfinding {
 
         while (openSet.isNotEmpty()) {
             val current = openSet.poll() ?: break
-            openSetPositions.remove(current.position)
+            openSetPositions.remove(current.coordinate)
 
-            if (current.position == end) {
+            if (current.coordinate == end) {
                 return reconstructPath(current)
             }
 
-            closedSet.add(current.position)
+            closedSet.add(current.coordinate)
 
-            for (neighborPos in getNeighbors(current.position, gridWidth, gridHeight)) {
-                if (neighborPos in blockedPositions || neighborPos in closedSet) continue
+            for (neighborPos in getNeighbors(current.coordinate)) {
+                // The destination 'end' should not be considered blocked for the purpose of finding a path to it.
+                if (neighborPos !in allCoordinates || (neighborPos in blockedPositions && neighborPos != end) || neighborPos in closedSet) continue
 
                 val tentativeGScore = current.gScore + 1
                 val neighborNode = nodes.getOrPut(neighborPos) { Node(neighborPos) }
@@ -43,7 +45,6 @@ object Pathfinding {
                     neighborNode.hScore = heuristic(neighborPos, end)
 
                     if (neighborPos in openSetPositions) {
-                        // Re-add to update priority in queue
                         openSet.remove(neighborNode)
                     }
                     openSet.add(neighborNode)
@@ -55,59 +56,35 @@ object Pathfinding {
         return null // No path found
     }
 
-    private fun heuristic(a: Position, b: Position): Int {
-        // Hex distance for pointy-top odd-r offset coordinates
-        val aQ = a.x - (a.y - (a.y and 1)) / 2
-        val aR = a.y
-        val bQ = b.x - (b.y - (b.y and 1)) / 2
-        val bR = b.y
-
-        return (Math.abs(aQ - bQ) + Math.abs(aQ + aR - bQ - bR) + Math.abs(aR - bR)) / 2
+    private fun heuristic(a: AxialCoordinate, b: AxialCoordinate): Int {
+        return (Math.abs(a.q - b.q) + Math.abs(a.q + a.r - b.q - b.r) + Math.abs(a.r - b.r)) / 2
     }
 
-    private fun getNeighbors(pos: Position, width: Int, height: Int): List<Position> {
-        val neighbors = mutableListOf<Position>()
-        val x = pos.x
-        val y = pos.y
-
-        // Neighbors same row
-        addIfValid(x - 1, y, width, height, neighbors)
-        addIfValid(x + 1, y, width, height, neighbors)
-
-        // Neighbors other rows (pointy-top odd-r)
-        if (y % 2 == 0) {
-            addIfValid(x - 1, y - 1, width, height, neighbors)
-            addIfValid(x, y - 1, width, height, neighbors)
-            addIfValid(x - 1, y + 1, width, height, neighbors)
-            addIfValid(x, y + 1, width, height, neighbors)
-        } else {
-            addIfValid(x, y - 1, width, height, neighbors)
-            addIfValid(x + 1, y - 1, width, height, neighbors)
-            addIfValid(x, y + 1, width, height, neighbors)
-            addIfValid(x + 1, y + 1, width, height, neighbors)
-        }
-
-        return neighbors
+    private fun getNeighbors(coord: AxialCoordinate): List<AxialCoordinate> {
+        // Axial neighbors:
+        // (q+1, r), (q+1, r-1), (q, r-1), (q-1, r), (q-1, r+1), (q, r+1)
+        return listOf(
+            AxialCoordinate(coord.q + 1, coord.r),
+            AxialCoordinate(coord.q + 1, coord.r - 1),
+            AxialCoordinate(coord.q, coord.r - 1),
+            AxialCoordinate(coord.q - 1, coord.r),
+            AxialCoordinate(coord.q - 1, coord.r + 1),
+            AxialCoordinate(coord.q, coord.r + 1)
+        )
     }
 
-    private fun addIfValid(x: Int, y: Int, width: Int, height: Int, list: MutableList<Position>) {
-        if (x in 0 until width && y in 0 until height) {
-            list.add(Position(x, y))
-        }
-    }
-
-    private fun reconstructPath(node: Node): List<Position> {
-        val path = mutableListOf<Position>()
+    private fun reconstructPath(node: Node): List<AxialCoordinate> {
+        val path = mutableListOf<AxialCoordinate>()
         var current: Node? = node
         while (current != null) {
-            path.add(current.position)
+            path.add(current.coordinate)
             current = current.parent
         }
         return path.reversed()
     }
 
     private class Node(
-        val position: Position,
+        val coordinate: AxialCoordinate,
         var parent: Node? = null,
         var gScore: Int = Int.MAX_VALUE,
         var hScore: Int = 0

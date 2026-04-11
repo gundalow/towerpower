@@ -46,11 +46,11 @@ class MainActivity : ComponentActivity() {
                             .padding(LayoutConstants.BOARD_BORDER_SIZE)
                     ) {
                         GameBoard(
-                            grid = gameState.grid,
+                            hexes = gameState.hexes,
                             enemies = gameState.enemies,
                             projectiles = gameState.projectiles,
                             puddles = gameState.puddles,
-                            onCellClick = { x, y -> viewModel.onCellClick(x, y) },
+                            onCellClick = { coord -> viewModel.onCellClick(coord) },
                             modifier = Modifier.weight(LayoutConstants.BOARD_HEIGHT_FRACTION)
                         )
                         GameControlPanel(

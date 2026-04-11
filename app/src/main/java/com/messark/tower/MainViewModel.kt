@@ -5,14 +5,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.messark.tower.model.*
+import com.messark.tower.utils.MapGenerator
 import com.messark.tower.utils.Pathfinding
 import com.messark.tower.utils.SettingsRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import java.util.*
 
 class MainViewModel @JvmOverloads constructor(
@@ -39,91 +36,24 @@ class MainViewModel @JvmOverloads constructor(
     val hapticEvents: SharedFlow<Unit> = _hapticEvents.asSharedFlow()
 
     init {
-        initializeGrid(8, 8) // Start with 8x8 as requested
+        initializeGame()
         startGameLoop()
     }
 
-    private fun initializeGrid(columns: Int, rows: Int) {
-        val edges = mutableListOf<Position>()
-        for (x in 0 until columns) {
-            edges.add(Position(x, 0))
-            edges.add(Position(x, rows - 1))
-        }
-        for (y in 1 until rows - 1) {
-            edges.add(Position(0, y))
-            edges.add(Position(columns - 1, y))
-        }
+    private fun initializeGame() {
+        val hexes = MapGenerator.generateMap(MapConstants.INITIAL_MAP)
 
-        var startPos: Position
-        var endPos: Position
-        val random = Random()
-
-        do {
-            startPos = edges[random.nextInt(edges.size)]
-            endPos = edges[random.nextInt(edges.size)]
-        } while (getEdgeDistance(startPos, endPos, columns, rows) < 5)
-
-        val pillarCount = (columns * rows) / 8
-        var pillarsPlaced = 0
-        val tempGrid = MutableList(rows) { y ->
-            MutableList(columns) { x ->
-                val type = when {
-                    x == startPos.x && y == startPos.y -> CellType.START
-                    x == endPos.x && y == endPos.y -> CellType.END
-                    else -> CellType.EMPTY
-                }
-                GridCell(Position(x, y), type)
-            }
-        }
-
-        while (pillarsPlaced < pillarCount) {
-            val bx = random.nextInt(columns)
-            val by = random.nextInt(rows)
-            if (tempGrid[by][bx].type == CellType.EMPTY) {
-                // Try placing pillar
-                tempGrid[by][bx] = tempGrid[by][bx].copy(type = CellType.PILLAR)
-
-                // Check if path still exists
-                val blocked = mutableSetOf<Position>()
-                tempGrid.forEach { row ->
-                    row.forEach { cell ->
-                        if (cell.type == CellType.PILLAR) blocked.add(cell.position)
-                    }
-                }
-
-                val path = Pathfinding.findPath(startPos, endPos, columns, rows, blocked)
-                if (path != null) {
-                    pillarsPlaced++
-                } else {
-                    // Revert
-                    tempGrid[by][bx] = tempGrid[by][bx].copy(type = CellType.EMPTY)
-                }
-            }
-        }
+        // Find start and end positions
+        // For simplicity, we'll pick edges for now if not explicitly marked
+        // In this Hawker theme, let's say enemies enter from the left (q min) and go to the Goal Table
+        val startPos = hexes.keys.minByOrNull { it.q } ?: AxialCoordinate(0, 0)
+        val endPos = hexes.values.firstOrNull { it.type == TileType.GOAL_TABLE }?.coordinate ?: AxialCoordinate(5, 5)
 
         _gameState.update { it.copy(
-            grid = tempGrid,
+            hexes = hexes,
             startPosition = startPos,
             endPosition = endPos
         ) }
-    }
-
-    private fun getEdgeDistance(p1: Position, p2: Position, width: Int, height: Int): Int {
-        fun getEdgeIndex(p: Position): Int {
-            return when {
-                p.y == 0 -> p.x
-                p.x == width - 1 -> width - 1 + p.y
-                p.y == height - 1 -> (width - 1) + (height - 1) + (width - 1 - p.x)
-                p.x == 0 -> (width - 1) * 2 + (height - 1) + (height - 1 - p.y)
-                else -> 0
-            }
-        }
-
-        val i1 = getEdgeIndex(p1)
-        val i2 = getEdgeIndex(p2)
-        val totalCells = (width - 1) * 2 + (height - 1) * 2
-        val dist = Math.abs(i1 - i2)
-        return Math.min(dist, totalCells - dist)
     }
 
     fun selectTower(tower: Tower) {
@@ -166,12 +96,11 @@ class MainViewModel @JvmOverloads constructor(
             newState = newState.copy(puddles = updatedPuddles)
 
             // 1. Spawning
-            if (state.waveActive && state.enemiesToSpawn > 0 && currentTimeMs - state.lastSpawnTimeMs > 1000 && state.grid.isNotEmpty()) {
+            if (state.waveActive && state.enemiesToSpawn > 0 && currentTimeMs - state.lastSpawnTimeMs > 1000 && state.hexes.isNotEmpty()) {
                 val startPos = state.startPosition ?: return@update state
                 val endPos = state.endPosition ?: return@update state
                 val path = Pathfinding.findPath(
-                    startPos, endPos, state.grid[0].size, state.grid.size,
-                    getBlockedPositions(state.grid, -1, -1)
+                    startPos, endPos, getBlockedCoordinates(state.hexes), state.hexes.keys
                 ) ?: emptyList()
 
                 val type = when {
@@ -197,7 +126,7 @@ class MainViewModel @JvmOverloads constructor(
                     type = type,
                     health = enemyHealth,
                     maxHealth = enemyHealth,
-                    position = PrecisePosition(startPos.x.toFloat(), startPos.y.toFloat()),
+                    position = PreciseAxialCoordinate(startPos.q.toFloat(), startPos.r.toFloat()),
                     baseSpeed = speed,
                     currentSpeed = speed,
                     path = path,
@@ -215,12 +144,10 @@ class MainViewModel @JvmOverloads constructor(
             val updatedEnemies = newState.enemies.mapNotNull { enemy ->
                 if (enemy.isDead) return@mapNotNull null
 
-                // Handle Freeze
                 if (enemy.freezeDurationMs > 0) {
                     return@mapNotNull enemy.copy(freezeDurationMs = Math.max(0, enemy.freezeDurationMs - 32))
                 }
 
-                // Handle Tourist Stops
                 var isStopped = enemy.isStopped
                 var stopDurationMs = enemy.stopDurationMs
                 var lastStopMs = enemy.lastStopMs
@@ -242,13 +169,10 @@ class MainViewModel @JvmOverloads constructor(
                     return@mapNotNull enemy.copy(isStopped = isStopped, stopDurationMs = stopDurationMs, lastStopMs = lastStopMs)
                 }
 
-                // Calculate Speed (Slow effect)
                 var speedMultiplier = 1.0f
                 if (enemy.type != EnemyType.DELIVERY_RIDER) {
                     val inPuddle = newState.puddles.any { puddle ->
-                        val dx = enemy.position.x - puddle.position.x
-                        val dy = enemy.position.y - puddle.position.y
-                        Math.sqrt((dx * dx + dy * dy).toDouble()) < 0.8
+                        axialDistance(enemy.position, puddle.position) < 0.8
                     }
                     if (inPuddle) speedMultiplier = 0.6f
                 }
@@ -256,19 +180,18 @@ class MainViewModel @JvmOverloads constructor(
 
                 val targetIndex = enemy.currentPathIndex + 1
                 if (targetIndex >= enemy.path.size) {
-                    // Reached end - occupy a table
                     newState = newState.copy(health = Math.max(0, newState.health - 1))
                     return@mapNotNull null
                 }
 
                 val target = enemy.path[targetIndex]
-                val dx = target.x - enemy.position.x
-                val dy = target.y - enemy.position.y
-                val dist = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                val dq = target.q - enemy.position.q
+                val dr = target.r - enemy.position.r
+                val dist = axialDistance(enemy.position, PreciseAxialCoordinate(target.q.toFloat(), target.r.toFloat()))
 
                 if (dist < effectiveSpeed) {
                     enemy.copy(
-                        position = PrecisePosition(target.x.toFloat(), target.y.toFloat()),
+                        position = PreciseAxialCoordinate(target.q.toFloat(), target.r.toFloat()),
                         currentPathIndex = targetIndex,
                         currentSpeed = effectiveSpeed,
                         isStopped = isStopped,
@@ -277,9 +200,9 @@ class MainViewModel @JvmOverloads constructor(
                     )
                 } else {
                     enemy.copy(
-                        position = PrecisePosition(
-                            enemy.position.x + (dx / dist) * effectiveSpeed,
-                            enemy.position.y + (dy / dist) * effectiveSpeed
+                        position = PreciseAxialCoordinate(
+                            enemy.position.q + (dq / dist) * effectiveSpeed,
+                            enemy.position.r + (dr / dist) * effectiveSpeed
                         ),
                         currentSpeed = effectiveSpeed,
                         isStopped = isStopped,
@@ -293,101 +216,71 @@ class MainViewModel @JvmOverloads constructor(
             // 3. Tower Firing
             val newProjectiles = newState.projectiles.toMutableList()
             val newPuddles = newState.puddles.toMutableList()
-            val updatedGrid = newState.grid.map { row ->
-                row.map { cell ->
-                    val tower = cell.tower
-                    if (tower != null && currentTimeMs - tower.lastFiredMs >= tower.fireRateMs) {
-                        // Find target
-                        val target = newState.enemies.firstOrNull { enemy ->
-                            val dx = enemy.position.x - cell.position.x
-                            val dy = enemy.position.y - cell.position.y
-                            Math.sqrt((dx * dx + dy * dy).toDouble()) <= tower.range
-                        }
+            val updatedHexes = newState.hexes.toMutableMap()
 
-                        if (target != null) {
-                            var updatedTower = tower.copy(lastFiredMs = currentTimeMs)
+            newState.hexes.forEach { (coord, tile) ->
+                val tower = tile.tower
+                if (tower != null && currentTimeMs - tower.lastFiredMs >= tower.fireRateMs) {
+                    val target = newState.enemies.firstOrNull { enemy ->
+                        axialDistance(enemy.position, PreciseAxialCoordinate(coord.q.toFloat(), coord.r.toFloat())) <= tower.range
+                    }
 
-                            when (tower.stallType) {
-                                StallType.CHICKEN_RICE -> {
-                                    newProjectiles.add(
-                                        Projectile(
-                                            id = UUID.randomUUID().toString(),
-                                            position = PrecisePosition(cell.position.x.toFloat(), cell.position.y.toFloat()),
-                                            targetEnemyId = target.id,
-                                            targetPosition = target.position,
-                                            damage = tower.damage,
-                                            color = tower.color
-                                        )
-                                    )
-                                }
-                                StallType.TEH_TARIK -> {
-                                    // Spawns StickyPuddle on enemy position
-                                    newPuddles.add(StickyPuddle(
-                                        id = UUID.randomUUID().toString(),
-                                        position = target.position,
-                                        spawnTimeMs = currentTimeMs
-                                    ))
-                                }
-                                StallType.SATAY -> {
-                                    // Periodic cone-based damage (simulated here by hitting all enemies in a cone)
-                                    val dx = target.position.x - cell.position.x
-                                    val dy = target.position.y - cell.position.y
-                                    val angle = Math.atan2(dy.toDouble(), dx.toDouble()).toFloat()
-                                    updatedTower = updatedTower.copy(rotation = angle)
-
-                                    // Immediate AoE in cone
-                                    newState.enemies.forEach { enemy ->
-                                        val edx = enemy.position.x - cell.position.x
-                                        val edy = enemy.position.y - cell.position.y
-                                        val dist = Math.sqrt((edx * edx + edy * edy).toDouble())
-                                        if (dist <= tower.range) {
-                                            val eAngle = Math.atan2(edy.toDouble(), edx.toDouble()).toFloat()
-                                            var diff = Math.abs(eAngle - angle)
-                                            if (diff > Math.PI) diff = (2 * Math.PI - diff).toFloat()
-                                            if (diff < Math.PI / 4) { // 45 degree cone
-                                                // Apply direct damage in ViewModel update loop
-                                                // (Simplification: we'll use hitEnemies map later if we were using projectiles,
-                                                // but here we just apply it)
-                                            }
-                                        }
-                                    }
-                                    // We'll stick to a special projectile for Satay too for consistency with damage logic
-                                    newProjectiles.add(
-                                        Projectile(
-                                            id = UUID.randomUUID().toString(),
-                                            position = PrecisePosition(cell.position.x.toFloat(), cell.position.y.toFloat()),
-                                            targetEnemyId = null,
-                                            targetPosition = target.position,
-                                            damage = tower.damage,
-                                            color = tower.color,
-                                            speed = 0.5f // fast "puff"
-                                        )
-                                    )
-                                }
-                                StallType.ICE_KACHANG -> {
-                                    newProjectiles.add(
-                                        Projectile(
-                                            id = UUID.randomUUID().toString(),
-                                            position = PrecisePosition(cell.position.x.toFloat(), cell.position.y.toFloat()),
-                                            targetEnemyId = target.id,
-                                            targetPosition = target.position,
-                                            damage = tower.damage,
-                                            color = tower.color,
-                                            isFreeze = true
-                                        )
-                                    )
-                                }
+                    if (target != null) {
+                        var updatedTower = tower.copy(lastFiredMs = currentTimeMs)
+                        when (tower.stallType) {
+                            StallType.CHICKEN_RICE -> {
+                                newProjectiles.add(Projectile(
+                                    id = UUID.randomUUID().toString(),
+                                    position = PreciseAxialCoordinate(coord.q.toFloat(), coord.r.toFloat()),
+                                    targetEnemyId = target.id,
+                                    targetPosition = target.position,
+                                    damage = tower.damage,
+                                    color = tower.color
+                                ))
                             }
-                            cell.copy(tower = updatedTower)
-                        } else cell
-                    } else cell
+                            StallType.TEH_TARIK -> {
+                                newPuddles.add(StickyPuddle(
+                                    id = UUID.randomUUID().toString(),
+                                    position = target.position,
+                                    spawnTimeMs = currentTimeMs
+                                ))
+                            }
+                            StallType.SATAY -> {
+                                val dq = target.position.q - coord.q
+                                val dr = target.position.r - coord.r
+                                val angle = Math.atan2(dr.toDouble(), dq.toDouble()).toFloat()
+                                updatedTower = updatedTower.copy(rotation = angle)
+                                newProjectiles.add(Projectile(
+                                    id = UUID.randomUUID().toString(),
+                                    position = PreciseAxialCoordinate(coord.q.toFloat(), coord.r.toFloat()),
+                                    targetEnemyId = null,
+                                    targetPosition = target.position,
+                                    damage = tower.damage,
+                                    color = tower.color,
+                                    speed = 0.5f
+                                ))
+                            }
+                            StallType.ICE_KACHANG -> {
+                                newProjectiles.add(Projectile(
+                                    id = UUID.randomUUID().toString(),
+                                    position = PreciseAxialCoordinate(coord.q.toFloat(), coord.r.toFloat()),
+                                    targetEnemyId = target.id,
+                                    targetPosition = target.position,
+                                    damage = tower.damage,
+                                    color = tower.color,
+                                    isFreeze = true
+                                ))
+                            }
+                        }
+                        updatedHexes[coord] = tile.copy(tower = updatedTower)
+                    }
                 }
             }
-            newState = newState.copy(grid = updatedGrid, projectiles = newProjectiles, puddles = newPuddles)
+            newState = newState.copy(hexes = updatedHexes, projectiles = newProjectiles, puddles = newPuddles)
 
             // 4. Projectile Movement and Collision
             val finalProjectiles = mutableListOf<Projectile>()
-            val hitEnemies = mutableMapOf<String, Int>() // enemyId to damage
+            val hitEnemies = mutableMapOf<String, Int>()
             val frozenEnemies = mutableSetOf<String>()
 
             newState.projectiles.forEach { proj ->
@@ -397,74 +290,53 @@ class MainViewModel @JvmOverloads constructor(
                     proj.targetPosition
                 }
 
-                val dx = targetPos.x - proj.position.x
-                val dy = targetPos.y - proj.position.y
-                val dist = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                val dq = targetPos.q - proj.position.q
+                val dr = targetPos.r - proj.position.r
+                val dist = axialDistance(proj.position, targetPos)
 
                 if (dist < proj.speed) {
                     if (proj.targetEnemyId != null) {
                         hitEnemies[proj.targetEnemyId] = hitEnemies.getOrDefault(proj.targetEnemyId, 0) + proj.damage
-                        if (proj.isFreeze) {
-                            frozenEnemies.add(proj.targetEnemyId)
-                        }
+                        if (proj.isFreeze) frozenEnemies.add(proj.targetEnemyId)
                     } else {
-                        // AoE damage at targetPosition (for Satay)
                         newState.enemies.forEach { enemy ->
-                            val edx = enemy.position.x - proj.targetPosition.x
-                            val edy = enemy.position.y - proj.targetPosition.y
-                            if (Math.sqrt((edx * edx + edy * edy).toDouble()) <= 1.0) {
+                            if (axialDistance(enemy.position, proj.targetPosition) <= 1.0) {
                                 hitEnemies[enemy.id] = hitEnemies.getOrDefault(enemy.id, 0) + proj.damage
                             }
                         }
                     }
                 } else {
                     finalProjectiles.add(proj.copy(
-                        position = PrecisePosition(
-                            proj.position.x + (dx / dist) * proj.speed,
-                            proj.position.y + (dy / dist) * proj.speed
+                        position = PreciseAxialCoordinate(
+                            proj.position.q + (dq / dist) * proj.speed,
+                            proj.position.r + (dr / dist) * proj.speed
                         )
                     ))
                 }
             }
 
-            // Apply damage
             val finalEnemies = newState.enemies.map { enemy ->
-                var damageTaken = hitEnemies.getOrDefault(enemy.id, 0)
-
+                val damageTaken = hitEnemies.getOrDefault(enemy.id, 0)
                 if (damageTaken > 0 || frozenEnemies.contains(enemy.id)) {
                     val newHealth = Math.max(0, enemy.health - damageTaken)
                     var updatedEnemy = enemy.copy(health = newHealth)
-
-                    if (frozenEnemies.contains(enemy.id)) {
-                        updatedEnemy = updatedEnemy.copy(freezeDurationMs = 1500L)
-                    }
-
+                    if (frozenEnemies.contains(enemy.id)) updatedEnemy = updatedEnemy.copy(freezeDurationMs = 1500L)
                     if (newHealth <= 0) {
                         newState = newState.copy(gold = newState.gold + enemy.reward)
-                        // Trigger haptic if not throttled
                         val currentTime = System.currentTimeMillis()
                         if (currentTime - lastHapticTimeMs >= 1000) {
                             viewModelScope.launch {
-                                val settings = settingsRepository.settingsFlow.first()
-                                if (settings.hapticEnabled) {
-                                    _hapticEvents.emit(Unit)
-                                }
+                                if (settingsRepository.settingsFlow.first().hapticEnabled) _hapticEvents.emit(Unit)
                             }
                             lastHapticTimeMs = currentTime
                         }
                         enemy.copy(health = 0, isDead = true)
-                    } else {
-                        enemy.copy(health = newHealth)
-                    }
+                    } else updatedEnemy
                 } else enemy
             }.filter { !it.isDead }
 
-            newState = newState.copy(
-                enemies = finalEnemies,
-                projectiles = finalProjectiles
-            )
+            newState = newState.copy(enemies = finalEnemies, projectiles = finalProjectiles)
 
-            // 5. Check wave end
             if (newState.waveActive && newState.enemiesToSpawn == 0 && newState.enemies.isEmpty()) {
                 newState = newState.copy(waveActive = false)
             }
@@ -473,56 +345,37 @@ class MainViewModel @JvmOverloads constructor(
         }
     }
 
-    fun onCellClick(x: Int, y: Int) {
+    private fun axialDistance(a: PreciseAxialCoordinate, b: PreciseAxialCoordinate): Float {
+        return (Math.abs(a.q - b.q) + Math.abs(a.q + a.r - b.q - b.r) + Math.abs(a.r - b.r)) / 2f
+    }
+
+    fun onCellClick(coord: AxialCoordinate) {
         val currentState = _gameState.value
         val towerToPlace = currentState.selectedTowerType
 
-        if (towerToPlace != null && currentState.gold >= towerToPlace.cost && currentState.grid.isNotEmpty()) {
-            val cell = currentState.grid[y][x]
-            if (cell.type == CellType.EMPTY && cell.tower == null) {
-                // Check if blocking path
-                val blockedPositions = getBlockedPositions(currentState.grid, x, y)
-                val startPos = currentState.startPosition ?: return
-                val endPos = currentState.endPosition ?: return
+        if (towerToPlace != null && currentState.gold >= towerToPlace.cost) {
+            val tile = currentState.hexes[coord]
+            if (tile != null && tile.type == TileType.FLOOR_PLAIN && tile.tower == null) {
+                val blocked = getBlockedCoordinates(currentState.hexes) + coord
                 val path = Pathfinding.findPath(
-                    startPos,
-                    endPos,
-                    currentState.grid[0].size,
-                    currentState.grid.size,
-                    blockedPositions
+                    currentState.startPosition ?: return,
+                    currentState.endPosition ?: return,
+                    blocked,
+                    currentState.hexes.keys
                 )
 
                 if (path != null) {
-                    val newGrid = currentState.grid.mapIndexed { rowIdx, row ->
-                        if (rowIdx == y) {
-                            row.mapIndexed { colIdx, gridCell ->
-                                if (colIdx == x) {
-                                    gridCell.copy(tower = towerToPlace.copy(id = UUID.randomUUID().toString()))
-                                } else gridCell
-                            }
-                        } else row
-                    }
-                    _gameState.update { it.copy(
-                        grid = newGrid,
-                        gold = it.gold - towerToPlace.cost
-                    ) }
+                    val newHexes = currentState.hexes.toMutableMap()
+                    newHexes[coord] = tile.copy(tower = towerToPlace.copy(id = UUID.randomUUID().toString()))
+                    _gameState.update { it.copy(hexes = newHexes, gold = it.gold - towerToPlace.cost) }
                 }
             }
         }
     }
 
-    private fun getBlockedPositions(grid: List<List<GridCell>>, newX: Int, newY: Int): Set<Position> {
-        val blocked = mutableSetOf<Position>()
-        grid.forEach { row ->
-            row.forEach { cell ->
-                if (cell.tower != null || cell.type == CellType.PILLAR) {
-                    blocked.add(cell.position)
-                }
-            }
-        }
-        if (newX != -1 && newY != -1) {
-            blocked.add(Position(newX, newY))
-        }
-        return blocked
+    private fun getBlockedCoordinates(hexes: Map<AxialCoordinate, HexTile>): Set<AxialCoordinate> {
+        return hexes.values.filter {
+            it.tower != null || it.type == TileType.PILLAR || it.type == TileType.GOAL_TABLE
+        }.map { it.coordinate }.toSet()
     }
 }

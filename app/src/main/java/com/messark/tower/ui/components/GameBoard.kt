@@ -8,213 +8,249 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.messark.tower.model.CellType
-import com.messark.tower.model.Enemy
-import com.messark.tower.model.GridCell
-import com.messark.tower.model.Projectile
-
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.rotate
+import com.messark.tower.R
 import com.messark.tower.model.*
+import kotlin.math.sqrt
+import java.util.Comparator
 
 @Composable
 fun GameBoard(
-    grid: List<List<GridCell>>,
+    hexes: Map<AxialCoordinate, HexTile>,
     enemies: List<Enemy>,
     projectiles: List<Projectile>,
     puddles: List<StickyPuddle>,
-    onCellClick: (Int, Int) -> Unit,
+    onCellClick: (AxialCoordinate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val hexSize = 30.dp
-    val rows = grid.size
-    val cols = if (rows > 0) grid[0].size else 0
+    val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet) // Assuming 1775912114044 is mapped to sprite_sheet
 
-    val hexWidth = Math.sqrt(3.0).toFloat() * hexSize.value
-    val hexHeight = 2f * hexSize.value
-    val horizontalSpacing = hexWidth
-    val verticalSpacing = hexHeight * 0.75f
+    val hexSize = 64.dp // Base size for hexes
+
+    // Slices
+    val floorPlainRect = IntRect(0, 0, 256, 256)
+    val floorCheckeredRect = IntRect(256, 0, 512, 256)
+    val floorDirtyRect = IntRect(512, 0, 768, 256)
+    val floorChopeRect = IntRect(1024, 256, 1280, 512)
+    val edgeNorthRect = IntRect(1280, 0, 1536, 256)
+    val edgeCornerRect = IntRect(1792, 256, 2048, 512)
+    val pillarRect = IntRect(1280, 512, 1536, 1024)
+    val goalTableRect = IntRect(1536, 1024, 2048, 1536)
+
+    val uiTehTarikRect = IntRect(0, 1792, 256, 2048)
+    val uiSatayRect = IntRect(256, 1792, 512, 2048)
+    val uiChickenRiceRect = IntRect(512, 1792, 768, 2048)
+    val uiIceKachangRect = IntRect(0, 1792, 256, 2048) // Using Teh Tarik for Ice Kachang for now
+
+    val enemySalarymanRect = IntRect(1024, 1792, 1280, 2048)
+    val enemyRiderRect = IntRect(1536, 1792, 1792, 2048)
+    val fxPuddleRect = IntRect(1792, 1792, 2048, 2048)
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF1B5E20)) // Dark green background
+            .background(Color(0xFF1B5E20))
             .verticalScroll(rememberScrollState())
             .horizontalScroll(rememberScrollState())
     ) {
         Canvas(
             modifier = Modifier
-                .size(
-                    width = (cols * horizontalSpacing + hexWidth / 2).dp,
-                    height = (rows * verticalSpacing + hexHeight / 4).dp
-                )
+                .size(2000.dp, 2000.dp) // Large fixed size for scrolling, can be calculated
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
-                        // Reverse hex projection (simplified)
-                        val y = (offset.y / (verticalSpacing.dp.toPx())).toInt()
-                        val xOffset = if (y % 2 != 0) (horizontalSpacing.dp.toPx() / 2f) else 0f
-                        val x = ((offset.x - xOffset) / (horizontalSpacing.dp.toPx())).toInt()
-
-                        if (x in 0 until cols && y in 0 until rows) {
-                            onCellClick(x, y)
-                        }
+                        val hexSizePx = hexSize.toPx()
+                        // Simple inverse axial projection
+                        val r = (offset.y / (hexSizePx * 1.5f)).toInt()
+                        val q = ((offset.x - (r * hexSizePx * sqrt(3f) / 2f)) / (hexSizePx * sqrt(3f))).toInt()
+                        onCellClick(AxialCoordinate(q, r))
                     }
                 }
         ) {
             val hexSizePx = hexSize.toPx()
-            val hexWidthPx = Math.sqrt(3.0).toFloat() * hexSizePx
-            val hexHeightPx = 2f * hexSizePx
-            val hSpacingPx = hexWidthPx
-            val vSpacingPx = hexHeightPx * 0.75f
+            val W = sqrt(3f) * hexSizePx
+            val H = 2f * hexSizePx
 
-            fun getHexCenter(x: Int, y: Int): Offset {
-                val xOffset = if (y % 2 != 0) hSpacingPx / 2f else 0f
-                return Offset(x * hSpacingPx + xOffset + hexWidthPx / 2, y * vSpacingPx + hexHeightPx / 2)
+            fun toScreen(q: Int, r: Int): Offset {
+                val x = W * (q + r / 2f)
+                val y = H * (3/4f) * r
+                return Offset(x, y)
             }
 
-            fun getPreciseHexCenter(x: Float, y: Float): Offset {
-                val yInt = y.toInt()
-                val xOffset = if (yInt % 2 != 0) hSpacingPx / 2f else 0f
-                // This is a simplification for smooth movement between hexes
-                // A better approach would be to interpolate the xOffset based on y
-                val nextYInt = (y + 1).toInt()
-                val nextXOffset = if (nextYInt % 2 != 0) hSpacingPx / 2f else 0f
-                val interpolatedXOffset = xOffset + (nextXOffset - xOffset) * (y - yInt)
-
-                return Offset(x * hSpacingPx + interpolatedXOffset + hexWidthPx / 2, y * vSpacingPx + hexHeightPx / 2)
+            fun toScreenPrecise(q: Float, r: Float): Offset {
+                val x = W * (q + r / 2f)
+                val y = H * (3/4f) * r
+                return Offset(x, y)
             }
 
-            // Draw grid
-            for (y in 0 until rows) {
-                for (x in 0 until cols) {
-                    val cell = grid[y][x]
-                    val center = getHexCenter(x, y)
+            // Group all drawables for Z-ordering
+            val drawables = mutableListOf<DrawableEntity>()
 
-                    val color = when (cell.type) {
-                        CellType.EMPTY -> Color(0xFF2E7D32)
-                        CellType.PATH -> Color(0xFF795548)
-                        CellType.START -> Color(0xFFF44336)
-                        CellType.END -> Color(0xFF2196F3)
-                        CellType.PILLAR -> Color(0xFF5D4037)
-                    }
+            hexes.forEach { (coord, tile) ->
+                val screenPos = toScreen(coord.q, coord.r)
+                val srcRect = when (tile.type) {
+                    TileType.FLOOR_PLAIN -> floorPlainRect
+                    TileType.FLOOR_CHECKERED -> floorCheckeredRect
+                    TileType.FLOOR_DIRTY -> floorDirtyRect
+                    TileType.FLOOR_CHOPE -> floorChopeRect
+                    TileType.PILLAR -> pillarRect
+                    TileType.GOAL_TABLE -> goalTableRect
+                    TileType.EDGE_NORTH -> edgeNorthRect
+                    TileType.EDGE_CORNER -> edgeCornerRect
+                    else -> floorPlainRect
+                }
 
-                    val hexPath = Path().apply {
-                        for (i in 0 until 6) {
-                            val angleDeg = 60f * i - 30f
-                            val angleRad = Math.toRadians(angleDeg.toDouble()).toFloat()
-                            val px = center.x + hexSizePx * Math.cos(angleRad.toDouble()).toFloat()
-                            val py = center.y + hexSizePx * Math.sin(angleRad.toDouble()).toFloat()
-                            if (i == 0) moveTo(px, py) else lineTo(px, py)
+                // Draw floor always at the bottom of its Z-layer
+                drawables.add(DrawableEntity(
+                    y = screenPos.y,
+                    zOrder = 0,
+                    draw = {
+                        val destSize = if (tile.type == TileType.PILLAR) {
+                            IntSize(W.toInt(), (H * 2).toInt())
+                        } else if (tile.type == TileType.GOAL_TABLE) {
+                            IntSize((W * 2).toInt(), (H * 2).toInt())
+                        } else {
+                            IntSize(W.toInt(), H.toInt())
                         }
-                        close()
+
+                        val destOffset = if (tile.type == TileType.PILLAR) {
+                            IntOffset(screenPos.x.toInt(), (screenPos.y - H).toInt())
+                        } else if (tile.type == TileType.GOAL_TABLE) {
+                            IntOffset((screenPos.x - W/2).toInt(), (screenPos.y - H).toInt())
+                        } else {
+                            IntOffset(screenPos.x.toInt(), screenPos.y.toInt())
+                        }
+
+                        drawImage(
+                            image = spriteSheet,
+                            srcOffset = srcRect.topLeft,
+                            srcSize = srcRect.size,
+                            dstOffset = destOffset,
+                            dstSize = destSize
+                        )
                     }
+                ))
 
-                    drawPath(path = hexPath, color = color)
-                    drawPath(
-                        path = hexPath,
-                        color = Color.Black.copy(alpha = 0.1f),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f)
-                    )
-
-                    // Draw tower
-                    cell.tower?.let { tower ->
-                        rotate(degrees = Math.toDegrees(tower.rotation.toDouble()).toFloat(), pivot = center) {
-                            if (tower.stallType == StallType.SATAY) {
-                                // Draw cone
-                                val conePath = Path().apply {
-                                    moveTo(center.x, center.y)
-                                    val r = tower.range * hSpacingPx
-                                    val a1 = -Math.PI / 8
-                                    val a2 = Math.PI / 8
-                                    lineTo(
-                                        center.x + r * Math.cos(a1).toFloat(),
-                                        center.y + r * Math.sin(a1).toFloat()
-                                    )
-                                    lineTo(
-                                        center.x + r * Math.cos(a2).toFloat(),
-                                        center.y + r * Math.sin(a2).toFloat()
-                                    )
-                                    close()
-                                }
-                                drawPath(conePath, color = tower.color.copy(alpha = 0.3f))
-                            }
-                            drawCircle(
-                                color = tower.color,
-                                radius = hexSizePx * 0.6f,
-                                center = center
+                tile.tower?.let { tower ->
+                    val towerSrcRect = when (tower.stallType) {
+                        StallType.TEH_TARIK -> uiTehTarikRect
+                        StallType.SATAY -> uiSatayRect
+                        StallType.CHICKEN_RICE -> uiChickenRiceRect
+                        StallType.ICE_KACHANG -> uiIceKachangRect
+                    }
+                    drawables.add(DrawableEntity(
+                        y = screenPos.y,
+                        zOrder = 1,
+                        draw = {
+                            drawImage(
+                                image = spriteSheet,
+                                srcOffset = towerSrcRect.topLeft,
+                                srcSize = towerSrcRect.size,
+                                dstOffset = IntOffset(screenPos.x.toInt(), screenPos.y.toInt()),
+                                dstSize = IntSize(W.toInt(), H.toInt())
                             )
                         }
-                    }
+                    ))
                 }
             }
 
-            // Draw puddles
             puddles.forEach { puddle ->
-                val center = getPreciseHexCenter(puddle.position.x, puddle.position.y)
-                drawCircle(
-                    color = Color(0xFF795548).copy(alpha = 0.6f), // Brownish sticky puddle
-                    radius = hexSizePx * 0.8f,
-                    center = center
-                )
+                val screenPos = toScreenPrecise(puddle.position.q, puddle.position.r)
+                drawables.add(DrawableEntity(
+                    y = screenPos.y,
+                    zOrder = 0, // Draw on floor layer
+                    draw = {
+                        drawImage(
+                            image = spriteSheet,
+                            srcOffset = fxPuddleRect.topLeft,
+                            srcSize = fxPuddleRect.size,
+                            dstOffset = IntOffset(screenPos.x.toInt(), screenPos.y.toInt()),
+                            dstSize = IntSize(W.toInt(), H.toInt())
+                        )
+                    }
+                ))
             }
 
-            // Draw enemies
             enemies.forEach { enemy ->
-                val center = getPreciseHexCenter(enemy.position.x, enemy.position.y)
-
-                val enemyColor = when (enemy.type) {
-                    EnemyType.SALARYMAN -> Color.White
-                    EnemyType.TOURIST -> Color.Yellow
-                    EnemyType.DELIVERY_RIDER -> Color.Black
+                val screenPos = toScreenPrecise(enemy.position.q, enemy.position.r)
+                val enemySrcRect = when (enemy.type) {
+                    EnemyType.SALARYMAN -> enemySalarymanRect
+                    EnemyType.TOURIST -> enemySalarymanRect // Use same for now
+                    EnemyType.DELIVERY_RIDER -> enemyRiderRect
                 }
+                drawables.add(DrawableEntity(
+                    y = screenPos.y,
+                    zOrder = 2,
+                    draw = {
+                        drawImage(
+                            image = spriteSheet,
+                            srcOffset = enemySrcRect.topLeft,
+                            srcSize = enemySrcRect.size,
+                            dstOffset = IntOffset(screenPos.x.toInt(), screenPos.y.toInt()),
+                            dstSize = IntSize(W.toInt(), H.toInt())
+                        )
 
-                drawCircle(
-                    color = enemyColor,
-                    radius = hexSizePx * 0.4f,
-                    center = center
-                )
+                        // Health bar
+                        val barWidth = W * 0.8f
+                        val barHeight = 4.dp.toPx()
+                        val healthPercent = enemy.health.toFloat() / enemy.maxHealth
 
-                if (enemy.freezeDurationMs > 0) {
-                    drawCircle(
-                        color = Color.Cyan.copy(alpha = 0.5f),
-                        radius = hexSizePx * 0.5f,
-                        center = center
-                    )
-                }
-
-                // Health bar (Hunger meter)
-                val barWidth = hexSizePx * 1.0f
-                val barHeight = 4.dp.toPx()
-                val healthPercent = enemy.health.toFloat() / enemy.maxHealth
-
-                drawRect(
-                    color = Color.Black,
-                    topLeft = Offset(center.x - barWidth / 2, center.y - hexSizePx * 0.7f),
-                    size = Size(barWidth, barHeight)
-                )
-                drawRect(
-                    color = Color.Red, // Hungry meter depletes
-                    topLeft = Offset(center.x - barWidth / 2, center.y - hexSizePx * 0.7f),
-                    size = Size(barWidth * healthPercent, barHeight)
-                )
+                        drawRect(
+                            color = Color.Black,
+                            topLeft = Offset(screenPos.x + W * 0.1f, screenPos.y - 10f),
+                            size = Size(barWidth, barHeight)
+                        )
+                        drawRect(
+                            color = Color.Red,
+                            topLeft = Offset(screenPos.x + W * 0.1f, screenPos.y - 10f),
+                            size = Size(barWidth * healthPercent, barHeight)
+                        )
+                    }
+                ))
             }
 
-            // Draw projectiles
             projectiles.forEach { projectile ->
-                val center = getPreciseHexCenter(projectile.position.x, projectile.position.y)
-
-                drawCircle(
-                    color = projectile.color,
-                    radius = 4.dp.toPx(),
-                    center = center
-                )
+                val screenPos = toScreenPrecise(projectile.position.q, projectile.position.r)
+                drawables.add(DrawableEntity(
+                    y = screenPos.y,
+                    zOrder = 3,
+                    draw = {
+                        drawCircle(
+                            color = projectile.color,
+                            radius = 4.dp.toPx(),
+                            center = Offset(screenPos.x + W/2, screenPos.y + H/2)
+                        )
+                    }
+                ))
             }
+
+            // Sort and draw
+            val sortedDrawables = drawables.sortedWith(object : Comparator<DrawableEntity> {
+                override fun compare(a: DrawableEntity, b: DrawableEntity): Int {
+                    val yComp = a.y.compareTo(b.y)
+                    return if (yComp != 0) yComp else a.zOrder.compareTo(b.zOrder)
+                }
+            })
+            sortedDrawables.forEach { it.draw(this) }
         }
     }
 }
+
+data class DrawableEntity(
+    val y: Float,
+    val zOrder: Int,
+    val draw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit
+)
