@@ -1,4 +1,4 @@
-package com.example.app.ui.components
+package com.messark.tower.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.app.model.Tower
+import com.messark.tower.model.Tower
 
 @Composable
 fun GameControlPanel(

@@ -1,4 +1,4 @@
-# Tower Defense Game Plan
+# Tower Power Game Plan
 
 ## Overview
 This document outlines the architecture and implementation progress of the Tower Defense game.
