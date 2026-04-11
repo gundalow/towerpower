@@ -12,15 +12,18 @@ object Pathfinding {
         blockedPositions: Set<Position>
     ): List<Position>? {
         val openSet = PriorityQueue<Node>(compareBy { it.fScore })
+        val openSetPositions = mutableSetOf<Position>()
         val closedSet = mutableSetOf<Position>()
         val nodes = mutableMapOf<Position, Node>()
 
         val startNode = Node(start, gScore = 0, hScore = heuristic(start, end))
         openSet.add(startNode)
+        openSetPositions.add(start)
         nodes[start] = startNode
 
         while (openSet.isNotEmpty()) {
             val current = openSet.poll() ?: break
+            openSetPositions.remove(current.position)
 
             if (current.position == end) {
                 return reconstructPath(current)
@@ -38,9 +41,13 @@ object Pathfinding {
                     neighborNode.parent = current
                     neighborNode.gScore = tentativeGScore
                     neighborNode.hScore = heuristic(neighborPos, end)
-                    if (neighborPos !in openSet.map { it.position }) {
-                        openSet.add(neighborNode)
+
+                    if (neighborPos in openSetPositions) {
+                        // Re-add to update priority in queue
+                        openSet.remove(neighborNode)
                     }
+                    openSet.add(neighborNode)
+                    openSetPositions.add(neighborPos)
                 }
             }
         }

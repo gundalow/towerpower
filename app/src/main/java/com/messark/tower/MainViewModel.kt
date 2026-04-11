@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.util.*
 
-class MainViewModel(
+class MainViewModel @JvmOverloads constructor(
     application: Application,
     private val settingsRepository: SettingsRepository = SettingsRepository(application)
 ) : AndroidViewModel(application) {
@@ -166,9 +166,9 @@ class MainViewModel(
             newState = newState.copy(puddles = updatedPuddles)
 
             // 1. Spawning
-            if (state.waveActive && state.enemiesToSpawn > 0 && currentTimeMs - state.lastSpawnTimeMs > 1000) {
-                val startPos = state.startPosition!!
-                val endPos = state.endPosition!!
+            if (state.waveActive && state.enemiesToSpawn > 0 && currentTimeMs - state.lastSpawnTimeMs > 1000 && state.grid.isNotEmpty()) {
+                val startPos = state.startPosition ?: return@update state
+                val endPos = state.endPosition ?: return@update state
                 val path = Pathfinding.findPath(
                     startPos, endPos, state.grid[0].size, state.grid.size,
                     getBlockedPositions(state.grid, -1, -1)
@@ -477,14 +477,16 @@ class MainViewModel(
         val currentState = _gameState.value
         val towerToPlace = currentState.selectedTowerType
 
-        if (towerToPlace != null && currentState.gold >= towerToPlace.cost) {
+        if (towerToPlace != null && currentState.gold >= towerToPlace.cost && currentState.grid.isNotEmpty()) {
             val cell = currentState.grid[y][x]
             if (cell.type == CellType.EMPTY && cell.tower == null) {
                 // Check if blocking path
                 val blockedPositions = getBlockedPositions(currentState.grid, x, y)
+                val startPos = currentState.startPosition ?: return
+                val endPos = currentState.endPosition ?: return
                 val path = Pathfinding.findPath(
-                    currentState.startPosition!!,
-                    currentState.endPosition!!,
+                    startPos,
+                    endPos,
                     currentState.grid[0].size,
                     currentState.grid.size,
                     blockedPositions
