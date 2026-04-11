@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
                             grid = gameState.grid,
                             enemies = gameState.enemies,
                             projectiles = gameState.projectiles,
+                            puddles = gameState.puddles,
                             onCellClick = { x, y -> viewModel.onCellClick(x, y) },
                             modifier = Modifier.weight(LayoutConstants.BOARD_HEIGHT_FRACTION)
                         )

@@ -34,7 +34,7 @@ class MainViewModelTest {
         val state = viewModel.gameState.first()
 
         assertNotNull(state.grid)
-        assertEquals(100, state.health)
+        assertEquals(10, state.health) // Hawker Center Hustle uses 10 tables
         assertEquals(500, state.gold)
         assertNotNull(state.startPosition)
         assertNotNull(state.endPosition)

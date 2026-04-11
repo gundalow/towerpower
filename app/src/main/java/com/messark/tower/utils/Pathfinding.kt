@@ -49,16 +49,44 @@ object Pathfinding {
     }
 
     private fun heuristic(a: Position, b: Position): Int {
-        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
+        // Hex distance for pointy-top odd-r offset coordinates
+        val aQ = a.x - (a.y - (a.y and 1)) / 2
+        val aR = a.y
+        val bQ = b.x - (b.y - (b.y and 1)) / 2
+        val bR = b.y
+
+        return (Math.abs(aQ - bQ) + Math.abs(aQ + aR - bQ - bR) + Math.abs(aR - bR)) / 2
     }
 
     private fun getNeighbors(pos: Position, width: Int, height: Int): List<Position> {
         val neighbors = mutableListOf<Position>()
-        if (pos.x > 0) neighbors.add(Position(pos.x - 1, pos.y))
-        if (pos.x < width - 1) neighbors.add(Position(pos.x + 1, pos.y))
-        if (pos.y > 0) neighbors.add(Position(pos.x, pos.y - 1))
-        if (pos.y < height - 1) neighbors.add(Position(pos.x, pos.y + 1))
+        val x = pos.x
+        val y = pos.y
+
+        // Neighbors same row
+        addIfValid(x - 1, y, width, height, neighbors)
+        addIfValid(x + 1, y, width, height, neighbors)
+
+        // Neighbors other rows (pointy-top odd-r)
+        if (y % 2 == 0) {
+            addIfValid(x - 1, y - 1, width, height, neighbors)
+            addIfValid(x, y - 1, width, height, neighbors)
+            addIfValid(x - 1, y + 1, width, height, neighbors)
+            addIfValid(x, y + 1, width, height, neighbors)
+        } else {
+            addIfValid(x, y - 1, width, height, neighbors)
+            addIfValid(x + 1, y - 1, width, height, neighbors)
+            addIfValid(x, y + 1, width, height, neighbors)
+            addIfValid(x + 1, y + 1, width, height, neighbors)
+        }
+
         return neighbors
+    }
+
+    private fun addIfValid(x: Int, y: Int, width: Int, height: Int, list: MutableList<Position>) {
+        if (x in 0 until width && y in 0 until height) {
+            list.add(Position(x, y))
+        }
     }
 
     private fun reconstructPath(node: Node): List<Position> {
