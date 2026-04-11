@@ -24,6 +24,8 @@ fun GameControlPanel(
     availableTowers: List<Tower>,
     selectedTower: Tower?,
     onTowerSelected: (Tower) -> Unit,
+    onStartWave: () -> Unit,
+    waveActive: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -44,7 +46,7 @@ fun GameControlPanel(
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(6),
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -61,10 +63,11 @@ fun GameControlPanel(
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(
-            onClick = { /* Static for now */ },
-            modifier = Modifier.fillMaxWidth()
+            onClick = onStartWave,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !waveActive
         ) {
-            Text(text = "START WAVE")
+            Text(text = if (waveActive) "WAVE IN PROGRESS" else "START WAVE")
         }
     }
 }
