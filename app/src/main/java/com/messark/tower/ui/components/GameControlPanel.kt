@@ -39,14 +39,16 @@ fun GameControlPanel(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(text = "❤️ $health", color = Color.Red, fontSize = 20.sp)
-            Text(text = "💰 $gold", color = Color.Yellow, fontSize = 20.sp)
+            Text(text = "🪑 Tables: $health", color = Color.Red, fontSize = 20.sp)
+            Text(text = "💰 Budget: $gold", color = Color.Yellow, fontSize = 20.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        Text(text = "STALL SHOP", color = Color.White, fontSize = 16.sp)
+
         LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
+            columns = GridCells.Fixed(4),
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -67,7 +69,7 @@ fun GameControlPanel(
             modifier = Modifier.fillMaxWidth(),
             enabled = !waveActive
         ) {
-            Text(text = if (waveActive) "WAVE IN PROGRESS" else "START WAVE")
+            Text(text = if (waveActive) "LUNCH RUSH IN PROGRESS" else "START LUNCH RUSH")
         }
     }
 }
