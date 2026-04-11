@@ -2,17 +2,26 @@ package com.messark.tower.model
 
 import androidx.compose.ui.graphics.Color
 
-data class Position(val x: Int, val y: Int)
+data class AxialCoordinate(val q: Int, val r: Int)
 
-data class PrecisePosition(val x: Float, val y: Float)
+data class PreciseAxialCoordinate(val q: Float, val r: Float)
 
-enum class CellType {
-    EMPTY, PATH, START, END, PILLAR
+enum class TileType {
+    FLOOR_PLAIN,
+    FLOOR_CHECKERED,
+    FLOOR_DIRTY,
+    FLOOR_CHOPE,
+    EDGE_NORTH,
+    EDGE_CORNER,
+    PILLAR,
+    GOAL_TABLE,
+    START,
+    END
 }
 
-data class GridCell(
-    val position: Position,
-    val type: CellType = CellType.EMPTY,
+data class HexTile(
+    val coordinate: AxialCoordinate,
+    val type: TileType = TileType.FLOOR_PLAIN,
     val tower: Tower? = null
 )
 
@@ -42,10 +51,10 @@ data class Enemy(
     val type: EnemyType = EnemyType.SALARYMAN,
     val health: Int,
     val maxHealth: Int,
-    val position: PrecisePosition,
+    val position: PreciseAxialCoordinate,
     val baseSpeed: Float = 0.05f, // Grid units per tick
     val currentSpeed: Float = 0.05f,
-    val path: List<Position> = emptyList(),
+    val path: List<AxialCoordinate> = emptyList(),
     val currentPathIndex: Int = 0,
     val isDead: Boolean = false,
     val reward: Int = 20,
@@ -57,9 +66,9 @@ data class Enemy(
 
 data class Projectile(
     val id: String,
-    val position: PrecisePosition,
+    val position: PreciseAxialCoordinate,
     val targetEnemyId: String?,
-    val targetPosition: PrecisePosition,
+    val targetPosition: PreciseAxialCoordinate,
     val damage: Int,
     val speed: Float = 0.2f,
     val color: Color,
@@ -68,21 +77,21 @@ data class Projectile(
 
 data class StickyPuddle(
     val id: String,
-    val position: PrecisePosition,
+    val position: PreciseAxialCoordinate,
     val spawnTimeMs: Long,
     val durationMs: Long = 3000L
 )
 
 data class GameState(
-    val grid: List<List<GridCell>> = emptyList(),
-    val health: Int = 10, // Changed to 10 tables
+    val hexes: Map<AxialCoordinate, HexTile> = emptyMap(),
+    val health: Int = 10, // 10 tables
     val gold: Int = 500,
     val selectedTowerType: Tower? = null,
     val enemies: List<Enemy> = emptyList(),
     val projectiles: List<Projectile> = emptyList(),
     val puddles: List<StickyPuddle> = emptyList(),
-    val startPosition: Position? = null,
-    val endPosition: Position? = null,
+    val startPosition: AxialCoordinate? = null,
+    val endPosition: AxialCoordinate? = null,
     val waveActive: Boolean = false,
     val currentWave: Int = 0,
     val enemiesToSpawn: Int = 0,
