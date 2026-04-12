@@ -26,7 +26,7 @@ data class HexTile(
 )
 
 enum class StallType {
-    TEH_TARIK, SATAY, CHICKEN_RICE, ICE_KACHANG
+    TEH_TARIK, SATAY, CHICKEN_RICE, DURIAN, ICE_KACHANG
 }
 
 data class Tower(
@@ -43,7 +43,7 @@ data class Tower(
 )
 
 enum class EnemyType {
-    SALARYMAN, TOURIST, DELIVERY_RIDER
+    SALARYMAN, TOURIST, AUNTIE, DELIVERY_RIDER
 }
 
 data class Enemy(

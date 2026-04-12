@@ -24,7 +24,8 @@ class MainViewModel @JvmOverloads constructor(
             Tower("t1", "Teh Tarik", 150, Color.Blue, stallType = StallType.TEH_TARIK, range = 3f),
             Tower("t2", "Satay", 200, Color.Red, stallType = StallType.SATAY, range = 2.5f, damage = 5, fireRateMs = 500),
             Tower("t3", "Chicken Rice", 100, Color.Yellow, stallType = StallType.CHICKEN_RICE, range = 4f, damage = 15, fireRateMs = 700),
-            Tower("t4", "Ice Kachang", 250, Color.Cyan, stallType = StallType.ICE_KACHANG, range = 3.5f, damage = 2, fireRateMs = 1500)
+            Tower("t4", "Durian", 300, Color(0xFF4CAF50), stallType = StallType.DURIAN, range = 3f, damage = 25, fireRateMs = 2000),
+            Tower("t5", "Ice Kachang", 250, Color.Cyan, stallType = StallType.ICE_KACHANG, range = 3.5f, damage = 2, fireRateMs = 1500)
         )
     )
     val availableTowers: StateFlow<List<Tower>> = _availableTowers.asStateFlow()
@@ -107,19 +108,22 @@ class MainViewModel @JvmOverloads constructor(
 
                 val type = when {
                     state.enemiesToSpawn == 1 && state.currentWave % 5 == 0 -> EnemyType.DELIVERY_RIDER
-                    Random().nextFloat() < 0.3f -> EnemyType.TOURIST
+                    Random().nextFloat() < 0.2f -> EnemyType.AUNTIE
+                    Random().nextFloat() < 0.4f -> EnemyType.TOURIST
                     else -> EnemyType.SALARYMAN
                 }
 
                 val enemyHealth = when (type) {
                     EnemyType.SALARYMAN -> 50 + (state.currentWave - 1) * 10
                     EnemyType.TOURIST -> 100 + (state.currentWave - 1) * 20
+                    EnemyType.AUNTIE -> 150 + (state.currentWave - 1) * 30
                     EnemyType.DELIVERY_RIDER -> 500 + (state.currentWave - 1) * 100
                 }
 
                 val speed = when (type) {
                     EnemyType.SALARYMAN -> 0.08f
                     EnemyType.TOURIST -> 0.04f
+                    EnemyType.AUNTIE -> 0.03f
                     EnemyType.DELIVERY_RIDER -> 0.06f
                 }
 
@@ -271,6 +275,17 @@ class MainViewModel @JvmOverloads constructor(
                                     damage = tower.damage,
                                     color = tower.color,
                                     isFreeze = true
+                                ))
+                            }
+                            StallType.DURIAN -> {
+                                // Placeholder for Durian: high damage single target
+                                newProjectiles.add(Projectile(
+                                    id = UUID.randomUUID().toString(),
+                                    position = PreciseAxialCoordinate(coord.q.toFloat(), coord.r.toFloat()),
+                                    targetEnemyId = target.id,
+                                    targetPosition = target.position,
+                                    damage = tower.damage,
+                                    color = tower.color
                                 ))
                             }
                         }
