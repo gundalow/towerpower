@@ -2,16 +2,14 @@ package com.messark.tower.model
 
 object MapConstants {
     val INITIAL_MAP = listOf(
-        "EEEEEEEEEE",
-        "EFFFFFFFFE",
-        "EFPFFFFPFE",
-        "EFFFFFFFFE",
-        "EF  G   FE",
-        "EF GGG  FE",
-        "EF  G   FE",
-        "EFPFFFFPFE",
-        "EFFFFFFFFE",
-        "EEEEEEEEEE"
+        "EEEEEGEEEEE",
+        "EFFFFFFFFFE",
+        "EFPPPPPPFEE",
+        "EF F  F F E",
+        "EF F  F F E",
+        "EF F  F F E",
+        "EFFFFFFFFFE",
+        "EEEEE EEEEE"
     )
 
     // Legend:

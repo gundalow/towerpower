@@ -24,20 +24,13 @@ object MapGenerator {
                     'G' -> TileType.GOAL_TABLE
                     'N' -> TileType.EDGE_NORTH
                     'E' -> TileType.EDGE_CORNER
+                    ' ' -> TileType.FLOOR_PLAIN
                     else -> TileType.FLOOR_PLAIN
                 }
 
-                if (char == 'G') {
-                    // Goal Table occupies a 7-hex cluster
-                    hexes[coord] = HexTile(coord, TileType.GOAL_TABLE)
-                    getNeighbors(coord).forEach { neighbor ->
-                        hexes[neighbor] = HexTile(neighbor, TileType.GOAL_TABLE)
-                    }
-                } else if (char != ' ') {
-                    // Only place if not already occupied (e.g. by a Goal Table neighbor)
-                    if (!hexes.containsKey(coord)) {
-                        hexes[coord] = HexTile(coord, type)
-                    }
+                // Place the tile based on character type
+                if (!hexes.containsKey(coord)) {
+                    hexes[coord] = HexTile(coord, type)
                 }
             }
         }
