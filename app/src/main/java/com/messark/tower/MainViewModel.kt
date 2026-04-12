@@ -44,15 +44,17 @@ class MainViewModel @JvmOverloads constructor(
         val hexes = MapGenerator.generateMap(MapConstants.INITIAL_MAP)
 
         // Find start and end positions
-        // For simplicity, we'll pick edges for now if not explicitly marked
-        // In this Hawker theme, let's say enemies enter from the left (q min) and go to the Goal Table
-        val startPos = hexes.keys.minByOrNull { it.q } ?: AxialCoordinate(0, 0)
-        val endPos = hexes.values.firstOrNull { it.type == TileType.GOAL_TABLE }?.coordinate ?: AxialCoordinate(5, 5)
+        // In the new levelOneMap, the start position is the empty space in the last row
+        // Row 7: "EEEEE EEEEE" -> space at index 5.
+        // Axial q = q_offset - (r - (r and 1)) / 2 = 5 - (7 - 1) / 2 = 5 - 3 = 2.
+        val startPos = AxialCoordinate(2, 7)
+        val endPos = hexes.values.firstOrNull { it.type == TileType.GOAL_TABLE }?.coordinate ?: AxialCoordinate(0, 0)
 
         _gameState.update { it.copy(
             hexes = hexes,
             startPosition = startPos,
-            endPosition = endPos
+            endPosition = endPos,
+            gold = 500 // Start with some gold to place towers
         ) }
     }
 

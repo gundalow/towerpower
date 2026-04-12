@@ -39,17 +39,18 @@ fun GameBoard(
     onCellClick: (AxialCoordinate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet) // Assuming 1775912114044 is mapped to sprite_sheet
+    val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet)
 
-    val hexSize = 64.dp // Base size for hexes
+    val hexWidth = 48.dp
+    val hexHeight = hexWidth * 2f / sqrt(3f)
 
     // Snip constants
     val snipOffset = 69
     val towerSnipOffset = 96
     val pillarSnipOffsetX = 69
-    val pillarSnipOffsetY = 139
-    val goalSnipOffsetX = 114
-    val goalSnipOffsetY = 161
+    val pillarSnipOffsetY = 139 // Adjusted from 256 block
+    val goalSnipOffsetX = 114 // Adjusted from 256 block
+    val goalSnipOffsetY = 161 // Adjusted from 256 block
 
     // Slices
     val floorPlainRect = IntRect(0 + snipOffset, 0 + snipOffset, 0 + snipOffset + 117, 0 + snipOffset + 117)
@@ -82,33 +83,42 @@ fun GameBoard(
                 .size(2000.dp, 2000.dp) // Large fixed size for scrolling, can be calculated
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
-                        val hexSizePx = hexSize.toPx()
-                        val borderPx = 20.dp.toPx() // Matching LayoutConstants.BOARD_BORDER_SIZE
-                        val W = sqrt(3f) * hexSizePx
+                        val wPx = hexWidth.toPx()
+                        val hPx = hexHeight.toPx()
+                        val borderPx = 20.dp.toPx()
 
-                        val adjustedX = offset.x - borderPx - W / 2f
-                        val adjustedY = offset.y - borderPx - hexSizePx
+                        val adjustedY = offset.y - borderPx - hPx / 2f
+                        val r = Math.round(adjustedY / (hPx * 0.75f)).toInt()
 
-                        val r = Math.round(adjustedY / (hexSizePx * 1.5f)).toInt()
-                        val q = Math.round((adjustedX / W) - (r / 2f)).toInt()
+                        val rowOffset = if (r % 2 != 0) wPx / 2f else 0f
+                        val adjustedX = offset.x - borderPx - wPx / 2f - rowOffset
+                        val q_offset = Math.round(adjustedX / wPx).toInt()
+
+                        // Convert Offset (q_offset, r) back to Axial (q, r)
+                        val q = q_offset - (r - (r and 1)) / 2
                         onCellClick(AxialCoordinate(q, r))
                     }
                 }
         ) {
-            val hexSizePx = hexSize.toPx()
-            val W = sqrt(3f) * hexSizePx
-            val H = 2f * hexSizePx
+            val wPx = hexWidth.toPx()
+            val hPx = hexHeight.toPx()
             val borderPx = 20.dp.toPx()
 
             fun toScreen(q: Int, r: Int): Offset {
-                val x = W * (q + r / 2f) + borderPx + W / 2f
-                val y = (H * 0.75f) * r + borderPx + H / 2f
+                // Axial to Offset
+                val q_offset = q + (r - (r and 1)) / 2
+                val rowOffset = if (r % 2 != 0) wPx / 2f else 0f
+                val x = q_offset * wPx + rowOffset + borderPx + wPx / 2f
+                val y = r * (hPx * 0.75f) + borderPx + hPx / 2f
                 return Offset(x, y)
             }
 
             fun toScreenPrecise(q: Float, r: Float): Offset {
-                val x = W * (q + r / 2f) + borderPx + W / 2f
-                val y = (H * 0.75f) * r + borderPx + H / 2f
+                // Axial to Offset
+                val q_offset = q + (r.toInt() - (r.toInt() and 1)) / 2f
+                val rowOffset = if (r.toInt() % 2 != 0) wPx / 2f else 0f
+                val x = q_offset * wPx + rowOffset + borderPx + wPx / 2f
+                val y = r * (hPx * 0.75f) + borderPx + hPx / 2f
                 return Offset(x, y)
             }
 
@@ -152,13 +162,13 @@ fun GameBoard(
                     draw = {
                         val destSize = when (tile.type) {
                             TileType.PILLAR -> {
-                                IntSize((117 * (W / 117f)).toInt(), (234 * (H / 117f)).toInt())
+                                IntSize((117 * (wPx / 117f)).toInt(), (234 * (wPx / 117f)).toInt())
                             }
                             TileType.GOAL_TABLE -> {
-                                IntSize((284 * (W / 117f)).toInt(), (190 * (H / 117f)).toInt())
+                                IntSize((284 * (wPx / 117f)).toInt(), (190 * (wPx / 117f)).toInt())
                             }
                             else -> {
-                                IntSize(W.toInt(), H.toInt())
+                                IntSize(wPx.toInt(), hPx.toInt())
                             }
                         }
 
@@ -179,7 +189,7 @@ fun GameBoard(
 
                         val shouldClip = tile.type != TileType.PILLAR && tile.type != TileType.GOAL_TABLE
                         if (shouldClip) {
-                            clipPath(createHexPath(screenPos, hexSizePx)) {
+                            clipPath(createHexPath(screenPos, hPx / 2f)) {
                                 drawImage(
                                     image = spriteSheet,
                                     srcOffset = srcRect.topLeft,
@@ -212,8 +222,8 @@ fun GameBoard(
                         r = coord.r.toFloat(),
                         zOrder = 1,
                         draw = {
-                            val tW = (64 * (W / 117f)).toInt()
-                            val tH = (64 * (H / 117f)).toInt()
+                            val tW = (64 * (wPx / 117f)).toInt()
+                            val tH = (64 * (wPx / 117f)).toInt()
                             drawImage(
                                 image = spriteSheet,
                                 srcOffset = towerSrcRect.topLeft,
@@ -233,13 +243,13 @@ fun GameBoard(
                     r = puddle.position.r,
                     zOrder = 0, // Draw on floor layer
                     draw = {
-                        clipPath(createHexPath(screenPos, hexSizePx)) {
+                        clipPath(createHexPath(screenPos, hPx / 2f)) {
                             drawImage(
                                 image = spriteSheet,
                                 srcOffset = fxPuddleRect.topLeft,
                                 srcSize = fxPuddleRect.size,
-                                dstOffset = IntOffset((screenPos.x - W / 2).toInt(), (screenPos.y - H / 2).toInt()),
-                                dstSize = IntSize(W.toInt(), H.toInt())
+                                dstOffset = IntOffset((screenPos.x - wPx / 2).toInt(), (screenPos.y - hPx / 2).toInt()),
+                                dstSize = IntSize(wPx.toInt(), hPx.toInt())
                             )
                         }
                     }
@@ -262,23 +272,23 @@ fun GameBoard(
                             image = spriteSheet,
                             srcOffset = enemySrcRect.topLeft,
                             srcSize = enemySrcRect.size,
-                            dstOffset = IntOffset((screenPos.x - W / 2).toInt(), (screenPos.y - H / 2).toInt()),
-                            dstSize = IntSize(W.toInt(), H.toInt())
+                            dstOffset = IntOffset((screenPos.x - wPx / 2).toInt(), (screenPos.y - hPx / 2).toInt()),
+                            dstSize = IntSize(wPx.toInt(), hPx.toInt())
                         )
 
                         // Health bar
-                        val barWidth = W * 0.8f
+                        val barWidth = wPx * 0.8f
                         val barHeight = 4.dp.toPx()
                         val healthPercent = enemy.health.toFloat() / enemy.maxHealth
 
                         drawRect(
                             color = Color.Black,
-                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - H / 2 - 10f),
+                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - hPx / 2 - 10f),
                             size = Size(barWidth, barHeight)
                         )
                         drawRect(
                             color = Color.Red,
-                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - H / 2 - 10f),
+                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - hPx / 2 - 10f),
                             size = Size(barWidth * healthPercent, barHeight)
                         )
                     }
