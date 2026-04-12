@@ -14,6 +14,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
@@ -41,24 +43,32 @@ fun GameBoard(
 
     val hexSize = 64.dp // Base size for hexes
 
+    // Snip constants
+    val snipOffset = 69
+    val towerSnipOffset = 96
+    val pillarSnipOffsetX = 69
+    val pillarSnipOffsetY = 139
+    val goalSnipOffsetX = 114
+    val goalSnipOffsetY = 161
+
     // Slices
-    val floorPlainRect = IntRect(0, 0, 256, 256)
-    val floorCheckeredRect = IntRect(256, 0, 512, 256)
-    val floorDirtyRect = IntRect(512, 0, 768, 256)
-    val floorChopeRect = IntRect(1024, 256, 1280, 512)
-    val edgeNorthRect = IntRect(1280, 0, 1536, 256)
-    val edgeCornerRect = IntRect(1792, 256, 2048, 512)
-    val pillarRect = IntRect(1280, 512, 1536, 1024)
-    val goalTableRect = IntRect(1536, 1024, 2048, 1536)
+    val floorPlainRect = IntRect(0 + snipOffset, 0 + snipOffset, 0 + snipOffset + 117, 0 + snipOffset + 117)
+    val floorCheckeredRect = IntRect(256 + snipOffset, 0 + snipOffset, 256 + snipOffset + 117, 0 + snipOffset + 117)
+    val floorDirtyRect = IntRect(512 + snipOffset, 0 + snipOffset, 512 + snipOffset + 117, 0 + snipOffset + 117)
+    val floorChopeRect = IntRect(1024 + snipOffset, 256 + snipOffset, 1024 + snipOffset + 117, 256 + snipOffset + 117)
+    val edgeNorthRect = IntRect(1280 + snipOffset, 0 + snipOffset, 1280 + snipOffset + 117, 0 + snipOffset + 117)
+    val edgeCornerRect = IntRect(1792 + snipOffset, 256 + snipOffset, 1792 + snipOffset + 117, 256 + snipOffset + 117)
+    val pillarRect = IntRect(1280 + pillarSnipOffsetX, 512 + pillarSnipOffsetY, 1280 + pillarSnipOffsetX + 117, 512 + pillarSnipOffsetY + 234)
+    val goalTableRect = IntRect(1536 + goalSnipOffsetX, 1024 + goalSnipOffsetY, 1536 + goalSnipOffsetX + 284, 1024 + goalSnipOffsetY + 190)
 
-    val uiTehTarikRect = IntRect(0, 1792, 256, 2048)
-    val uiSatayRect = IntRect(256, 1792, 512, 2048)
-    val uiChickenRiceRect = IntRect(512, 1792, 768, 2048)
-    val uiIceKachangRect = IntRect(0, 1792, 256, 2048) // Using Teh Tarik for Ice Kachang for now
+    val uiTehTarikRect = IntRect(0 + towerSnipOffset, 1792 + towerSnipOffset, 0 + towerSnipOffset + 64, 1792 + towerSnipOffset + 64)
+    val uiSatayRect = IntRect(256 + towerSnipOffset, 1792 + towerSnipOffset, 256 + towerSnipOffset + 64, 1792 + towerSnipOffset + 64)
+    val uiChickenRiceRect = IntRect(512 + towerSnipOffset, 1792 + towerSnipOffset, 512 + towerSnipOffset + 64, 1792 + towerSnipOffset + 64)
+    val uiIceKachangRect = uiTehTarikRect // Using Teh Tarik for Ice Kachang for now
 
-    val enemySalarymanRect = IntRect(1024, 1792, 1280, 2048)
-    val enemyRiderRect = IntRect(1536, 1792, 1792, 2048)
-    val fxPuddleRect = IntRect(1792, 1792, 2048, 2048)
+    val enemySalarymanRect = IntRect(1024 + snipOffset, 1792 + snipOffset, 1024 + snipOffset + 117, 1792 + snipOffset + 117)
+    val enemyRiderRect = IntRect(1536 + snipOffset, 1792 + snipOffset, 1536 + snipOffset + 117, 1792 + snipOffset + 117)
+    val fxPuddleRect = IntRect(1792 + snipOffset, 1792 + snipOffset, 1792 + snipOffset + 117, 1792 + snipOffset + 117)
 
     Box(
         modifier = modifier
@@ -73,9 +83,14 @@ fun GameBoard(
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
                         val hexSizePx = hexSize.toPx()
-                        // Simple inverse axial projection
-                        val r = (offset.y / (hexSizePx * 1.5f)).toInt()
-                        val q = ((offset.x - (r * hexSizePx * sqrt(3f) / 2f)) / (hexSizePx * sqrt(3f))).toInt()
+                        val borderPx = 20.dp.toPx() // Matching LayoutConstants.BOARD_BORDER_SIZE
+                        val W = sqrt(3f) * hexSizePx
+
+                        val adjustedX = offset.x - borderPx - W / 2f
+                        val adjustedY = offset.y - borderPx - hexSizePx
+
+                        val r = Math.round(adjustedY / (hexSizePx * 1.5f)).toInt()
+                        val q = Math.round((adjustedX / W) - (r / 2f)).toInt()
                         onCellClick(AxialCoordinate(q, r))
                     }
                 }
@@ -83,17 +98,33 @@ fun GameBoard(
             val hexSizePx = hexSize.toPx()
             val W = sqrt(3f) * hexSizePx
             val H = 2f * hexSizePx
+            val borderPx = 20.dp.toPx()
 
             fun toScreen(q: Int, r: Int): Offset {
-                val x = W * (q + r / 2f)
-                val y = H * (3/4f) * r
+                val x = W * (q + r / 2f) + borderPx + W / 2f
+                val y = (H * 0.75f) * r + borderPx + H / 2f
                 return Offset(x, y)
             }
 
             fun toScreenPrecise(q: Float, r: Float): Offset {
-                val x = W * (q + r / 2f)
-                val y = H * (3/4f) * r
+                val x = W * (q + r / 2f) + borderPx + W / 2f
+                val y = (H * 0.75f) * r + borderPx + H / 2f
                 return Offset(x, y)
+            }
+
+            fun createHexPath(center: Offset, radius: Float): Path {
+                return Path().apply {
+                    val angleStep = Math.PI.toFloat() / 3f
+                    // Pointy-topped hex: vertices are at 30, 90, 150, 210, 270, 330 degrees
+                    // Or -30, 30, 90, 150, 210, 270
+                    for (i in 0..5) {
+                        val angle = angleStep * i - Math.PI.toFloat() / 2f
+                        val x = center.x + radius * Math.cos(angle.toDouble()).toFloat()
+                        val y = center.y + radius * Math.sin(angle.toDouble()).toFloat()
+                        if (i == 0) moveTo(x, y) else lineTo(x, y)
+                    }
+                    close()
+                }
             }
 
             // Group all drawables for Z-ordering
@@ -115,32 +146,57 @@ fun GameBoard(
 
                 // Draw floor always at the bottom of its Z-layer
                 drawables.add(DrawableEntity(
-                    y = screenPos.y,
+                    q = coord.q.toFloat(),
+                    r = coord.r.toFloat(),
                     zOrder = 0,
                     draw = {
-                        val destSize = if (tile.type == TileType.PILLAR) {
-                            IntSize(W.toInt(), (H * 2).toInt())
-                        } else if (tile.type == TileType.GOAL_TABLE) {
-                            IntSize((W * 2).toInt(), (H * 2).toInt())
-                        } else {
-                            IntSize(W.toInt(), H.toInt())
+                        val destSize = when (tile.type) {
+                            TileType.PILLAR -> {
+                                IntSize((117 * (W / 117f)).toInt(), (234 * (H / 117f)).toInt())
+                            }
+                            TileType.GOAL_TABLE -> {
+                                IntSize((284 * (W / 117f)).toInt(), (190 * (H / 117f)).toInt())
+                            }
+                            else -> {
+                                IntSize(W.toInt(), H.toInt())
+                            }
                         }
 
-                        val destOffset = if (tile.type == TileType.PILLAR) {
-                            IntOffset(screenPos.x.toInt(), (screenPos.y - H).toInt())
-                        } else if (tile.type == TileType.GOAL_TABLE) {
-                            IntOffset((screenPos.x - W/2).toInt(), (screenPos.y - H).toInt())
-                        } else {
-                            IntOffset(screenPos.x.toInt(), screenPos.y.toInt())
+                        val destOffset = when (tile.type) {
+                            TileType.PILLAR -> {
+                                // Anchor bottom-center of 117x234 to hex center
+                                IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height).toInt())
+                            }
+                            TileType.GOAL_TABLE -> {
+                                // Anchor center of 284x190 to hex center
+                                IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height / 2).toInt())
+                            }
+                            else -> {
+                                // Anchor center of 117x117 to hex center
+                                IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height / 2).toInt())
+                            }
                         }
 
-                        drawImage(
-                            image = spriteSheet,
-                            srcOffset = srcRect.topLeft,
-                            srcSize = srcRect.size,
-                            dstOffset = destOffset,
-                            dstSize = destSize
-                        )
+                        val shouldClip = tile.type != TileType.PILLAR && tile.type != TileType.GOAL_TABLE
+                        if (shouldClip) {
+                            clipPath(createHexPath(screenPos, hexSizePx)) {
+                                drawImage(
+                                    image = spriteSheet,
+                                    srcOffset = srcRect.topLeft,
+                                    srcSize = srcRect.size,
+                                    dstOffset = destOffset,
+                                    dstSize = destSize
+                                )
+                            }
+                        } else {
+                            drawImage(
+                                image = spriteSheet,
+                                srcOffset = srcRect.topLeft,
+                                srcSize = srcRect.size,
+                                dstOffset = destOffset,
+                                dstSize = destSize
+                            )
+                        }
                     }
                 ))
 
@@ -152,15 +208,18 @@ fun GameBoard(
                         StallType.ICE_KACHANG -> uiIceKachangRect
                     }
                     drawables.add(DrawableEntity(
-                        y = screenPos.y,
+                        q = coord.q.toFloat(),
+                        r = coord.r.toFloat(),
                         zOrder = 1,
                         draw = {
+                            val tW = (64 * (W / 117f)).toInt()
+                            val tH = (64 * (H / 117f)).toInt()
                             drawImage(
                                 image = spriteSheet,
                                 srcOffset = towerSrcRect.topLeft,
                                 srcSize = towerSrcRect.size,
-                                dstOffset = IntOffset(screenPos.x.toInt(), screenPos.y.toInt()),
-                                dstSize = IntSize(W.toInt(), H.toInt())
+                                dstOffset = IntOffset((screenPos.x - tW / 2).toInt(), (screenPos.y - tH / 2).toInt()),
+                                dstSize = IntSize(tW, tH)
                             )
                         }
                     ))
@@ -170,16 +229,19 @@ fun GameBoard(
             puddles.forEach { puddle ->
                 val screenPos = toScreenPrecise(puddle.position.q, puddle.position.r)
                 drawables.add(DrawableEntity(
-                    y = screenPos.y,
+                    q = puddle.position.q,
+                    r = puddle.position.r,
                     zOrder = 0, // Draw on floor layer
                     draw = {
-                        drawImage(
-                            image = spriteSheet,
-                            srcOffset = fxPuddleRect.topLeft,
-                            srcSize = fxPuddleRect.size,
-                            dstOffset = IntOffset(screenPos.x.toInt(), screenPos.y.toInt()),
-                            dstSize = IntSize(W.toInt(), H.toInt())
-                        )
+                        clipPath(createHexPath(screenPos, hexSizePx)) {
+                            drawImage(
+                                image = spriteSheet,
+                                srcOffset = fxPuddleRect.topLeft,
+                                srcSize = fxPuddleRect.size,
+                                dstOffset = IntOffset((screenPos.x - W / 2).toInt(), (screenPos.y - H / 2).toInt()),
+                                dstSize = IntSize(W.toInt(), H.toInt())
+                            )
+                        }
                     }
                 ))
             }
@@ -192,14 +254,15 @@ fun GameBoard(
                     EnemyType.DELIVERY_RIDER -> enemyRiderRect
                 }
                 drawables.add(DrawableEntity(
-                    y = screenPos.y,
+                    q = enemy.position.q,
+                    r = enemy.position.r,
                     zOrder = 2,
                     draw = {
                         drawImage(
                             image = spriteSheet,
                             srcOffset = enemySrcRect.topLeft,
                             srcSize = enemySrcRect.size,
-                            dstOffset = IntOffset(screenPos.x.toInt(), screenPos.y.toInt()),
+                            dstOffset = IntOffset((screenPos.x - W / 2).toInt(), (screenPos.y - H / 2).toInt()),
                             dstSize = IntSize(W.toInt(), H.toInt())
                         )
 
@@ -210,12 +273,12 @@ fun GameBoard(
 
                         drawRect(
                             color = Color.Black,
-                            topLeft = Offset(screenPos.x + W * 0.1f, screenPos.y - 10f),
+                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - H / 2 - 10f),
                             size = Size(barWidth, barHeight)
                         )
                         drawRect(
                             color = Color.Red,
-                            topLeft = Offset(screenPos.x + W * 0.1f, screenPos.y - 10f),
+                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - H / 2 - 10f),
                             size = Size(barWidth * healthPercent, barHeight)
                         )
                     }
@@ -225,13 +288,14 @@ fun GameBoard(
             projectiles.forEach { projectile ->
                 val screenPos = toScreenPrecise(projectile.position.q, projectile.position.r)
                 drawables.add(DrawableEntity(
-                    y = screenPos.y,
+                    q = projectile.position.q,
+                    r = projectile.position.r,
                     zOrder = 3,
                     draw = {
                         drawCircle(
                             color = projectile.color,
                             radius = 4.dp.toPx(),
-                            center = Offset(screenPos.x + W/2, screenPos.y + H/2)
+                            center = screenPos
                         )
                     }
                 ))
@@ -240,8 +304,11 @@ fun GameBoard(
             // Sort and draw
             val sortedDrawables = drawables.sortedWith(object : Comparator<DrawableEntity> {
                 override fun compare(a: DrawableEntity, b: DrawableEntity): Int {
-                    val yComp = a.y.compareTo(b.y)
-                    return if (yComp != 0) yComp else a.zOrder.compareTo(b.zOrder)
+                    val rComp = a.r.compareTo(b.r)
+                    if (rComp != 0) return rComp
+                    val qComp = a.q.compareTo(b.q)
+                    if (qComp != 0) return qComp
+                    return a.zOrder.compareTo(b.zOrder)
                 }
             })
             sortedDrawables.forEach { it.draw(this) }
@@ -250,7 +317,8 @@ fun GameBoard(
 }
 
 data class DrawableEntity(
-    val y: Float,
+    val q: Float,
+    val r: Float,
     val zOrder: Int,
     val draw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit
 )
