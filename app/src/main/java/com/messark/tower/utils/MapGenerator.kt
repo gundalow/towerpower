@@ -22,11 +22,7 @@ object MapGenerator {
                     'F' -> TileType.FLOOR
                     'P' -> TileType.PILLAR
                     'G' -> TileType.GOAL_TABLE
-                    '1' -> TileType.EDGE_NW
-                    '2' -> TileType.EDGE_NE
-                    '3' -> TileType.EDGE_SW
-                    '4' -> TileType.EDGE_SE
-                    'T' -> TileType.EDGE_TOP
+                    '1', '2', '3', '4', 'T' -> TileType.FLOOR
                     ' ' -> TileType.FLOOR
                     else -> TileType.FLOOR
                 }

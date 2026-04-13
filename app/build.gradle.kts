@@ -1,4 +1,4 @@
-import java.util.Properties
+import java.io.ByteArrayOutputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,27 +7,27 @@ plugins {
 }
 
 fun getGitCommitCount(): Int {
+    val stdout = ByteArrayOutputStream()
     return try {
-        val stdout = java.io.ByteArrayOutputStream()
         project.exec {
             commandLine("git", "rev-list", "--count", "HEAD")
             standardOutput = stdout
         }
         stdout.toString().trim().toInt()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         1
     }
 }
 
 fun getGitVersionName(): String {
+    val stdout = ByteArrayOutputStream()
     return try {
-        val stdout = java.io.ByteArrayOutputStream()
         project.exec {
             commandLine("git", "describe", "--tags", "--always", "--dirty")
             standardOutput = stdout
         }
         stdout.toString().trim()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         "1.0-dev"
     }
 }
