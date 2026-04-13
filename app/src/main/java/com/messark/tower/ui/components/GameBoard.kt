@@ -1,5 +1,7 @@
 package com.messark.tower.ui.components
 
+import android.graphics.Rect
+import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -11,16 +13,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.imageResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.messark.tower.R
 import com.messark.tower.model.*
@@ -38,8 +36,12 @@ fun GameBoard(
 ) {
     val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet)
 
-    val hexWidth = 48.dp
+    val hexWidth = 47.dp // Reduced from 48.dp to bring hexes closer
     val hexHeight = hexWidth * 91f / 101f
+    
+    // Vertical spacing multiplier for pointy-top hexes. 
+    // Reduced slightly from 0.75f to 0.74f to eliminate vertical gaps.
+    val rowSpacingFactor = 0.74f
 
     Box(
         modifier = modifier
@@ -58,7 +60,7 @@ fun GameBoard(
                         val borderPx = 20.dp.toPx()
 
                         val adjustedY = offset.y - borderPx - hPx / 2f
-                        val r = Math.round(adjustedY / (hPx * 0.75f)).toInt()
+                        val r = Math.round(adjustedY / (hPx * rowSpacingFactor)).toInt()
 
                         val rowOffset = if (r % 2 != 0) wPx / 2f else 0f
                         val adjustedX = offset.x - borderPx - wPx / 2f - rowOffset
@@ -77,7 +79,7 @@ fun GameBoard(
                 val q_offset = q + (r - (r and 1)) / 2
                 val rowOffset = if (r % 2 != 0) wPx / 2f else 0f
                 val x = q_offset * wPx + rowOffset + borderPx + wPx / 2f
-                val y = r * (hPx * 0.75f) + borderPx + hPx / 2f
+                val y = r * (hPx * rowSpacingFactor) + borderPx + hPx / 2f
                 return Offset(x, y)
             }
 
@@ -85,19 +87,56 @@ fun GameBoard(
                 val q_offset = q + (r.toInt() - (r.toInt() and 1)) / 2f
                 val rowOffset = if (r.toInt() % 2 != 0) wPx / 2f else 0f
                 val x = q_offset * wPx + rowOffset + borderPx + wPx / 2f
-                val y = r * (hPx * 0.75f) + borderPx + hPx / 2f
+                val y = r * (hPx * rowSpacingFactor) + borderPx + hPx / 2f
                 return Offset(x, y)
             }
 
             fun createHexPath(center: Offset, width: Float, height: Float): Path {
+                // Increased bleed to cover overlaps correctly and hide the green background
+                val bleed = 3.5f
+                val w = width + bleed
+                val h = height + bleed
                 return Path().apply {
-                    moveTo(center.x, center.y - height / 2f)
-                    lineTo(center.x + width / 2f, center.y - height / 4f)
-                    lineTo(center.x + width / 2f, center.y + height / 4f)
-                    lineTo(center.x, center.y + height / 2f)
-                    lineTo(center.x - width / 2f, center.y + height / 4f)
-                    lineTo(center.x - width / 2f, center.y - height / 4f)
+                    moveTo(center.x, center.y - h / 2f)
+                    lineTo(center.x + w / 2f, center.y - h / 4f)
+                    lineTo(center.x + w / 2f, center.y + h / 4f)
+                    lineTo(center.x, center.y + h / 2f)
+                    lineTo(center.x - w / 2f, center.y + h / 4f)
+                    lineTo(center.x - w / 2f, center.y - h / 4f)
                     close()
+                }
+            }
+
+            fun drawSprite(
+                srcRect: androidx.compose.ui.unit.IntRect,
+                destCenter: Offset,
+                destSize: Size,
+                anchor: Offset = Offset(0.5f, 0.5f),
+                clipHex: Boolean = false
+            ) {
+                val topLeft = Offset(
+                    destCenter.x - destSize.width * anchor.x,
+                    destCenter.y - destSize.height * anchor.y
+                )
+
+                val drawBlock: DrawScope.() -> Unit = {
+                    drawIntoCanvas { canvas ->
+                        val paint = android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            isFilterBitmap = true
+                        }
+                        val androidSrc = Rect(srcRect.left, srcRect.top, srcRect.right, srcRect.bottom)
+                        val androidDst = RectF(topLeft.x, topLeft.y, topLeft.x + destSize.width, topLeft.y + destSize.height)
+                        canvas.nativeCanvas.drawBitmap(spriteSheet.asAndroidBitmap(), androidSrc, androidDst, paint)
+                    }
+                }
+
+                if (clipHex) {
+                    clipPath(createHexPath(destCenter, wPx, hPx)) {
+                        drawBlock()
+                    }
+                } else {
+                    drawBlock()
                 }
             }
 
@@ -106,7 +145,7 @@ fun GameBoard(
             hexes.forEach { (coord, tile) ->
                 val screenPos = toScreen(coord.q, coord.r)
 
-                // Always draw floor under anything that isn't an edge tile
+                // 1. Foundation: Draw floor under everything to ensure transparency blends with ground
                 if (!tile.type.name.startsWith("EDGE_")) {
                     drawables.add(DrawableEntity(
                         q = coord.q.toFloat(),
@@ -114,23 +153,18 @@ fun GameBoard(
                         zOrder = 0,
                         draw = {
                             val floorSrc = SpriteConstants.FLOOR_RECTS[tile.floorVariant % SpriteConstants.FLOOR_RECTS.size]
-                            val destSize = IntSize(wPx.toInt(), hPx.toInt())
-                            val destOffset = IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height / 2).toInt())
-                            clipPath(createHexPath(screenPos, wPx, hPx)) {
-                                drawImage(
-                                    image = spriteSheet,
-                                    srcOffset = floorSrc.topLeft,
-                                    srcSize = floorSrc.size,
-                                    dstOffset = destOffset,
-                                    dstSize = destSize,
-                                    blendMode = BlendMode.SrcOver,
-                                    filterQuality = FilterQuality.Low
-                                )
-                            }
+                            // Increased size overlap to ensure floor tiles cover all seams
+                            drawSprite(
+                                srcRect = floorSrc,
+                                destCenter = screenPos,
+                                destSize = Size(wPx + 3.0f, hPx + 3.0f),
+                                clipHex = true
+                            )
                         }
                     ))
                 }
 
+                // 2. Tile Content (Edges, Pillars, Tables)
                 if (tile.type != TileType.FLOOR) {
                     val srcRect = when (tile.type) {
                         TileType.PILLAR -> SpriteConstants.PILLAR_RECT
@@ -143,71 +177,46 @@ fun GameBoard(
                         else -> null
                     }
 
-                    if (srcRect != null) {
+                    srcRect?.let { rect ->
+                        val isEdge = tile.type.name.startsWith("EDGE_")
                         drawables.add(DrawableEntity(
                             q = coord.q.toFloat(),
                             r = coord.r.toFloat(),
-                            zOrder = if (tile.type.name.startsWith("EDGE_")) 0 else 1,
+                            zOrder = if (isEdge) 1 else 2,
                             draw = {
                                 val scale = wPx / 101f
-                                val destSize = when (tile.type) {
-                                    TileType.PILLAR -> IntSize((SpriteConstants.PILLAR_RECT.width * scale).toInt(), (SpriteConstants.PILLAR_RECT.height * scale).toInt())
-                                    TileType.GOAL_TABLE -> IntSize((SpriteConstants.GOAL_TABLE_RECT.width * scale).toInt(), (SpriteConstants.GOAL_TABLE_RECT.height * scale).toInt())
-                                    else -> IntSize(wPx.toInt(), hPx.toInt())
+                                val dSize = Size(rect.width * scale, rect.height * scale)
+                                val anchor = when (tile.type) {
+                                    TileType.PILLAR -> Offset(0.5f, 0.8f)
+                                    TileType.GOAL_TABLE -> Offset(0.5f, 0.75f)
+                                    else -> Offset(0.5f, 0.5f)
                                 }
-
-                                val destOffset = when (tile.type) {
-                                    TileType.PILLAR -> IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height * 0.75f).toInt())
-                                    TileType.GOAL_TABLE -> IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height).toInt())
-                                    else -> IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height / 2).toInt())
-                                }
-
-                                if (tile.type.name.startsWith("EDGE_")) {
-                                    clipPath(createHexPath(screenPos, wPx, hPx)) {
-                                        drawImage(
-                                            image = spriteSheet,
-                                            srcOffset = srcRect.topLeft,
-                                            srcSize = srcRect.size,
-                                            dstOffset = destOffset,
-                                            dstSize = destSize,
-                                            blendMode = BlendMode.SrcOver,
-                                            filterQuality = FilterQuality.Low
-                                        )
-                                    }
-                                } else {
-                                    drawImage(
-                                        image = spriteSheet,
-                                        srcOffset = srcRect.topLeft,
-                                        srcSize = srcRect.size,
-                                        dstOffset = destOffset,
-                                        dstSize = destSize,
-                                        blendMode = BlendMode.SrcOver,
-                                        filterQuality = FilterQuality.Low
-                                    )
-                                }
+                                drawSprite(
+                                    srcRect = rect,
+                                    destCenter = screenPos,
+                                    destSize = dSize,
+                                    anchor = anchor,
+                                    clipHex = isEdge
+                                )
                             }
                         ))
                     }
                 }
 
+                // 3. Towers
                 tile.tower?.let { tower ->
                     val towerSrcRect = SpriteConstants.STALL_RECTS[tower.stallType] ?: SpriteConstants.STALL_RECTS[StallType.CHICKEN_RICE]!!
                     drawables.add(DrawableEntity(
                         q = coord.q.toFloat(),
                         r = coord.r.toFloat(),
-                        zOrder = 1,
+                        zOrder = 3,
                         draw = {
                             val scale = wPx / 101f
-                            val tW = (65 * scale).toInt()
-                            val tH = (65 * scale).toInt()
-                            drawImage(
-                                image = spriteSheet,
-                                srcOffset = towerSrcRect.topLeft,
-                                srcSize = towerSrcRect.size,
-                                dstOffset = IntOffset((screenPos.x - tW / 2).toInt(), (screenPos.y - tH / 2).toInt()),
-                                dstSize = IntSize(tW, tH),
-                                blendMode = BlendMode.SrcOver,
-                                filterQuality = FilterQuality.Low
+                            val size = 65f * scale
+                            drawSprite(
+                                srcRect = towerSrcRect,
+                                destCenter = screenPos,
+                                destSize = Size(size, size)
                             )
                         }
                     ))
@@ -219,22 +228,15 @@ fun GameBoard(
                 drawables.add(DrawableEntity(
                     q = puddle.position.q,
                     r = puddle.position.r,
-                    zOrder = 0,
+                    zOrder = 1,
                     draw = {
                         val scale = wPx / 101f
-                        val pW = (64 * scale).toInt()
-                        val pH = (62 * scale).toInt()
-                        clipPath(createHexPath(screenPos, wPx, hPx)) {
-                            drawImage(
-                                image = spriteSheet,
-                                srcOffset = SpriteConstants.FX_PUDDLE_RECT.topLeft,
-                                srcSize = SpriteConstants.FX_PUDDLE_RECT.size,
-                                dstOffset = IntOffset((screenPos.x - pW / 2).toInt(), (screenPos.y - pH / 2).toInt()),
-                                dstSize = IntSize(pW, pH),
-                                blendMode = BlendMode.SrcOver,
-                                filterQuality = FilterQuality.Low
-                            )
-                        }
+                        drawSprite(
+                            srcRect = SpriteConstants.FX_PUDDLE_RECT,
+                            destCenter = screenPos,
+                            destSize = Size(64f * scale, 62f * scale),
+                            clipHex = true
+                        )
                     }
                 ))
             }
@@ -250,35 +252,22 @@ fun GameBoard(
                 drawables.add(DrawableEntity(
                     q = enemy.position.q,
                     r = enemy.position.r,
-                    zOrder = 2,
+                    zOrder = 4,
                     draw = {
                         val scale = wPx / 101f
-                        val eW = (enemySrcRect.width * scale).toInt()
-                        val eH = (enemySrcRect.height * scale).toInt()
-                        drawImage(
-                            image = spriteSheet,
-                            srcOffset = enemySrcRect.topLeft,
-                            srcSize = enemySrcRect.size,
-                            dstOffset = IntOffset((screenPos.x - eW / 2).toInt(), (screenPos.y - eH).toInt()),
-                            dstSize = IntSize(eW, eH),
-                            blendMode = BlendMode.SrcOver,
-                            filterQuality = FilterQuality.Low
+                        val dSize = Size(enemySrcRect.width * scale, enemySrcRect.height * scale)
+                        drawSprite(
+                            srcRect = enemySrcRect,
+                            destCenter = screenPos,
+                            destSize = dSize,
+                            anchor = Offset(0.5f, 1.0f) // Anchor feet to hex center
                         )
 
                         val barWidth = wPx * 0.8f
                         val barHeight = 4.dp.toPx()
                         val healthPercent = enemy.health.toFloat() / enemy.maxHealth
-
-                        drawRect(
-                            color = Color.Black,
-                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - hPx / 2 - 10f),
-                            size = Size(barWidth, barHeight)
-                        )
-                        drawRect(
-                            color = Color.Red,
-                            topLeft = Offset(screenPos.x - barWidth / 2, screenPos.y - hPx / 2 - 10f),
-                            size = Size(barWidth * healthPercent, barHeight)
-                        )
+                        drawRect(Color.Black, Offset(screenPos.x - barWidth / 2, screenPos.y - hPx / 2 - 10f), Size(barWidth, barHeight))
+                        drawRect(Color.Red, Offset(screenPos.x - barWidth / 2, screenPos.y - hPx / 2 - 10f), Size(barWidth * healthPercent, barHeight))
                     }
                 ))
             }
@@ -288,34 +277,26 @@ fun GameBoard(
                 drawables.add(DrawableEntity(
                     q = projectile.position.q,
                     r = projectile.position.r,
-                    zOrder = 3,
+                    zOrder = 5,
                     draw = {
-                        drawCircle(
-                            color = projectile.color,
-                            radius = 4.dp.toPx(),
-                            center = screenPos
-                        )
+                        drawCircle(color = projectile.color, radius = 4.dp.toPx(), center = screenPos)
                     }
                 ))
             }
 
-            // Depth sorting: 
-            // 1. All ground elements (zOrder == 0) first.
-            // 2. All standing elements (zOrder > 0) sorted by their Y-coordinate (row 'r').
             val sortedDrawables = drawables.sortedWith(object : Comparator<DrawableEntity> {
                 override fun compare(a: DrawableEntity, b: DrawableEntity): Int {
-                    val aGroup = if (a.zOrder == 0) 0 else 1
-                    val bGroup = if (b.zOrder == 0) 0 else 1
+                    val aGroup = if (a.zOrder == 0) 0 else if (a.zOrder == 1) 1 else 2
+                    val bGroup = if (b.zOrder == 0) 0 else if (b.zOrder == 1) 1 else 2
                     
                     if (aGroup != bGroup) return aGroup.compareTo(bGroup)
-                    
-                    val rComp = a.r.compareTo(b.r)
-                    if (rComp != 0) return rComp
-                    
-                    val qComp = a.q.compareTo(b.q)
-                    if (qComp != 0) return qComp
-                    
-                    return a.zOrder.compareTo(b.zOrder)
+                    if (aGroup == 2) {
+                        val rComp = a.r.compareTo(b.r)
+                        if (rComp != 0) return rComp
+                    }
+                    val zComp = a.zOrder.compareTo(b.zOrder)
+                    if (zComp != 0) return zComp
+                    return a.q.compareTo(b.q)
                 }
             })
             sortedDrawables.forEach { it.draw(this) }
@@ -327,5 +308,5 @@ data class DrawableEntity(
     val q: Float,
     val r: Float,
     val zOrder: Int,
-    val draw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit
+    val draw: DrawScope.() -> Unit
 )

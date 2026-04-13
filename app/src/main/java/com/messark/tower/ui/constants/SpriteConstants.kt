@@ -19,7 +19,7 @@ object SpriteConstants {
     val EDGE_SW_RECT = IntRect(948, 149, 1049, 240)
     val EDGE_SE_RECT = IntRect(1064, 149, 1165, 240)
     val EDGE_TOP_RECT = IntRect(830, 267, 931, 360)
-    val PILLAR_RECT = IntRect(514, 398, 615, 549)
+    val PILLAR_RECT = IntRect(31, 501, 101, 627)
     val GOAL_TABLE_RECT = IntRect(1100, 430, 1363, 628)
 
     val STALL_RECTS = mapOf(
