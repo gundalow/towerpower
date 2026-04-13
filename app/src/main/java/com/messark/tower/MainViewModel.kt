@@ -372,7 +372,7 @@ class MainViewModel @JvmOverloads constructor(
 
         if (towerToPlace != null && currentState.gold >= towerToPlace.cost) {
             val tile = currentState.hexes[coord]
-            if (tile != null && tile.type == TileType.FLOOR_PLAIN && tile.tower == null) {
+            if (tile != null && tile.type == TileType.FLOOR && tile.tower == null) {
                 val blocked = getBlockedCoordinates(currentState.hexes) + coord
                 val path = Pathfinding.findPath(
                     currentState.startPosition ?: return,
