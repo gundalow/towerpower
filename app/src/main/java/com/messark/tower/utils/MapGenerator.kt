@@ -90,10 +90,10 @@ object MapGenerator {
     }
 
     private fun getWeightedFloorVariant(): Int {
-        return if (random.nextFloat() < 0.80f) {
-            random.nextInt(2) // floor01 or floor02 (80% total)
+        return if (random.nextFloat() < 0.90f) {
+            0
         } else {
-            2 + random.nextInt(6) // floor03 to floor10 (20% total)
+            1 + random.nextInt(6) // floor01 to floor10 (20% total)
         }
     }
 
