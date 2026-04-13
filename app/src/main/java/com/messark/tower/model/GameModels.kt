@@ -7,12 +7,12 @@ data class AxialCoordinate(val q: Int, val r: Int)
 data class PreciseAxialCoordinate(val q: Float, val r: Float)
 
 enum class TileType {
-    FLOOR_PLAIN,
-    FLOOR_CHECKERED,
-    FLOOR_DIRTY,
-    FLOOR_CHOPE,
-    EDGE_NORTH,
-    EDGE_CORNER,
+    FLOOR,
+    EDGE_NW,
+    EDGE_NE,
+    EDGE_SW,
+    EDGE_SE,
+    EDGE_TOP,
     PILLAR,
     GOAL_TABLE,
     START,
@@ -21,8 +21,9 @@ enum class TileType {
 
 data class HexTile(
     val coordinate: AxialCoordinate,
-    val type: TileType = TileType.FLOOR_PLAIN,
-    val tower: Tower? = null
+    val type: TileType = TileType.FLOOR,
+    val tower: Tower? = null,
+    val floorVariant: Int = 0
 )
 
 enum class StallType {

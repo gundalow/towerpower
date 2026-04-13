@@ -3,8 +3,11 @@ package com.messark.tower.utils
 import com.messark.tower.model.AxialCoordinate
 import com.messark.tower.model.HexTile
 import com.messark.tower.model.TileType
+import java.util.Random
 
 object MapGenerator {
+    private val random = Random()
+
     fun generateMap(mapData: List<String>): Map<AxialCoordinate, HexTile> {
         val hexes = mutableMapOf<AxialCoordinate, HexTile>()
 
@@ -16,21 +19,24 @@ object MapGenerator {
                 val coord = AxialCoordinate(q, r)
 
                 val type = when (char) {
-                    'F' -> TileType.FLOOR_PLAIN
-                    'C' -> TileType.FLOOR_CHECKERED
-                    'D' -> TileType.FLOOR_DIRTY
-                    'H' -> TileType.FLOOR_CHOPE
+                    'F' -> TileType.FLOOR
                     'P' -> TileType.PILLAR
                     'G' -> TileType.GOAL_TABLE
-                    'N' -> TileType.EDGE_NORTH
-                    'E' -> TileType.EDGE_CORNER
-                    ' ' -> TileType.FLOOR_PLAIN
-                    else -> TileType.FLOOR_PLAIN
+                    '1' -> TileType.EDGE_NW
+                    '2' -> TileType.EDGE_NE
+                    '3' -> TileType.EDGE_SW
+                    '4' -> TileType.EDGE_SE
+                    'T' -> TileType.EDGE_TOP
+                    ' ' -> TileType.FLOOR
+                    else -> TileType.FLOOR
                 }
 
                 // Place the tile based on character type
                 if (!hexes.containsKey(coord)) {
-                    hexes[coord] = HexTile(coord, type)
+                    val floorVariant = if (type == TileType.FLOOR) {
+                        random.nextInt(8) // 0-7 variants
+                    } else 0
+                    hexes[coord] = HexTile(coord, type, floorVariant = floorVariant)
                 }
             }
         }

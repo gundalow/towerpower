@@ -42,29 +42,38 @@ fun GameBoard(
     val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet)
 
     val hexWidth = 48.dp
-    val hexHeight = hexWidth * 110f / 117f
+    val hexHeight = hexWidth * 91f / 101f
 
     // Slices
-    val floorPlainRect = IntRect(70, 94, 70 + 117, 94 + 110)
-    val floorCheckeredRect = IntRect(326, 94, 326 + 117, 94 + 110)
-    val floorDirtyRect = IntRect(1350, 94, 1350 + 117, 94 + 110)
-    val floorChopeRect = IntRect(1350, 350, 1350 + 117, 350 + 110)
-    val edgeNorthRect = IntRect(1862, 94, 1862 + 117, 94 + 110)
-    val edgeCornerRect = IntRect(1862, 606, 1862 + 117, 606 + 110)
-    val pillarRect = IntRect(70, 862, 70 + 117, 862 + 234)
-    val goalTableRect = IntRect(1606, 862, 1606 + 280, 862 + 200)
+    val floorRects = listOf(
+        IntRect(8, 33, 109, 124),   // floor01
+        IntRect(126, 33, 227, 124), // floor02
+        IntRect(244, 33, 345, 124), // floor03
+        IntRect(361, 33, 462, 124), // floor04
+        IntRect(478, 33, 579, 124), // floor05
+        IntRect(595, 33, 696, 124), // floor06
+        IntRect(713, 33, 814, 124), // floor07
+        IntRect(595, 149, 696, 240) // floor10
+    )
+    val edgeNWRect = IntRect(831, 33, 932, 124)
+    val edgeNERect = IntRect(1064, 33, 1165, 124)
+    val edgeSWRect = IntRect(948, 149, 1049, 240)
+    val edgeSERect = IntRect(1064, 149, 1165, 240)
+    val edgeTopRect = IntRect(830, 267, 931, 360)
+    val pillarRect = IntRect(514, 398, 615, 549)
+    val goalTableRect = IntRect(1100, 430, 1363, 628)
 
-    val uiTehTarikRect = IntRect(96, 1888, 96 + 65, 1888 + 65)
-    val uiSatayRect = IntRect(352, 1888, 352 + 65, 1888 + 65)
-    val uiChickenRiceRect = IntRect(608, 1888, 608 + 65, 1888 + 65)
-    val uiDurianRect = IntRect(864, 1888, 864 + 65, 1888 + 65)
-    val uiIceKachangRect = IntRect(1120, 1888, 1120 + 65, 1888 + 65)
+    val uiTehTarikRect = IntRect(28, 678, 93, 743)
+    val uiSatayRect = IntRect(116, 678, 181, 743)
+    val uiChickenRiceRect = IntRect(204, 678, 269, 743)
+    val uiDurianRect = IntRect(292, 678, 357, 743)
+    val uiIceKachangRect = IntRect(382, 678, 447, 743)
 
-    val enemySalarymanRect = IntRect(1088, 1632, 1088 + 100, 1632 + 180)
-    val enemyTouristRect = IntRect(1344, 1632, 1344 + 110, 1632 + 180)
-    val enemyAuntieRect = IntRect(1600, 1632, 1600 + 110, 1632 + 180)
-    val enemyRiderRect = IntRect(1580, 1880, 1580 + 160, 1880 + 150)
-    val fxPuddleRect = IntRect(1888, 1884, 1888 + 65, 1884 + 65)
+    val enemySalarymanRect = IntRect(615, 638, 665, 742)
+    val enemyTouristRect = IntRect(679, 638, 729, 742)
+    val enemyAuntieRect = IntRect(745, 638, 795, 742)
+    val enemyRiderRect = IntRect(990, 677, 1044, 744)
+    val fxPuddleRect = IntRect(1078, 679, 1142, 741)
 
     Box(
         modifier = modifier
@@ -135,15 +144,15 @@ fun GameBoard(
             hexes.forEach { (coord, tile) ->
                 val screenPos = toScreen(coord.q, coord.r)
                 val srcRect = when (tile.type) {
-                    TileType.FLOOR_PLAIN -> floorPlainRect
-                    TileType.FLOOR_CHECKERED -> floorCheckeredRect
-                    TileType.FLOOR_DIRTY -> floorDirtyRect
-                    TileType.FLOOR_CHOPE -> floorChopeRect
+                    TileType.FLOOR -> floorRects[tile.floorVariant % floorRects.size]
                     TileType.PILLAR -> pillarRect
                     TileType.GOAL_TABLE -> goalTableRect
-                    TileType.EDGE_NORTH -> edgeNorthRect
-                    TileType.EDGE_CORNER -> edgeCornerRect
-                    else -> floorPlainRect
+                    TileType.EDGE_NW -> edgeNWRect
+                    TileType.EDGE_NE -> edgeNERect
+                    TileType.EDGE_SW -> edgeSWRect
+                    TileType.EDGE_SE -> edgeSERect
+                    TileType.EDGE_TOP -> edgeTopRect
+                    else -> floorRects[0]
                 }
 
                 // Draw floor always at the bottom of its Z-layer
@@ -152,13 +161,16 @@ fun GameBoard(
                     r = coord.r.toFloat(),
                     zOrder = 0,
                     draw = {
-                        val scale = wPx / 117f
+                        val scale = wPx / 101f
                         val destSize = when (tile.type) {
                             TileType.PILLAR -> {
-                                IntSize((117 * scale).toInt(), (234 * scale).toInt())
+                                IntSize((pillarRect.width * scale).toInt(), (pillarRect.height * scale).toInt())
                             }
                             TileType.GOAL_TABLE -> {
-                                IntSize((280 * scale).toInt(), (200 * scale).toInt())
+                                IntSize((goalTableRect.width * scale).toInt(), (goalTableRect.height * scale).toInt())
+                            }
+                            TileType.EDGE_NW, TileType.EDGE_NE, TileType.EDGE_SW, TileType.EDGE_SE, TileType.EDGE_TOP -> {
+                                IntSize(wPx.toInt(), hPx.toInt())
                             }
                             else -> {
                                 IntSize(wPx.toInt(), hPx.toInt())
@@ -167,20 +179,20 @@ fun GameBoard(
 
                         val destOffset = when (tile.type) {
                             TileType.PILLAR -> {
-                                // Anchor bottom-center of 117x234 to hex center
+                                // Anchor bottom-center to hex center
                                 IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height).toInt())
                             }
                             TileType.GOAL_TABLE -> {
-                                // Anchor bottom-center of 280x200 to hex center
+                                // Anchor bottom-center to hex center
                                 IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height).toInt())
                             }
                             else -> {
-                                // Anchor center of 117x110 to hex center
+                                // Anchor center to hex center
                                 IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height / 2).toInt())
                             }
                         }
 
-                        val shouldClip = tile.type != TileType.PILLAR && tile.type != TileType.GOAL_TABLE
+                        val shouldClip = tile.type == TileType.FLOOR
                         if (shouldClip) {
                             clipPath(createHexPath(screenPos, wPx, hPx)) {
                                 drawImage(
@@ -216,7 +228,7 @@ fun GameBoard(
                         r = coord.r.toFloat(),
                         zOrder = 1,
                         draw = {
-                            val scale = wPx / 117f
+                            val scale = wPx / 101f
                             val tW = (65 * scale).toInt()
                             val tH = (65 * scale).toInt()
                             drawImage(
@@ -238,9 +250,9 @@ fun GameBoard(
                     r = puddle.position.r,
                     zOrder = 0, // Draw on floor layer
                     draw = {
-                        val scale = wPx / 117f
-                        val pW = (65 * scale).toInt()
-                        val pH = (65 * scale).toInt()
+                        val scale = wPx / 101f
+                        val pW = (64 * scale).toInt()
+                        val pH = (62 * scale).toInt()
                         clipPath(createHexPath(screenPos, wPx, hPx)) {
                             drawImage(
                                 image = spriteSheet,
@@ -267,7 +279,7 @@ fun GameBoard(
                     r = enemy.position.r,
                     zOrder = 2,
                     draw = {
-                        val scale = wPx / 117f
+                        val scale = wPx / 101f
                         val eW = (enemySrcRect.width * scale).toInt()
                         val eH = (enemySrcRect.height * scale).toInt()
                         drawImage(
