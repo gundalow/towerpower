@@ -392,7 +392,7 @@ class MainViewModel @JvmOverloads constructor(
 
     private fun getBlockedCoordinates(hexes: Map<AxialCoordinate, HexTile>): Set<AxialCoordinate> {
         return hexes.values.filter {
-            it.tower != null || it.type == TileType.PILLAR || it.type == TileType.GOAL_TABLE
+            it.tower != null || it.type == TileType.PILLAR || it.type == TileType.GOAL_TABLE || it.type.name.startsWith("EDGE_")
         }.map { it.coordinate }.toSet()
     }
 }

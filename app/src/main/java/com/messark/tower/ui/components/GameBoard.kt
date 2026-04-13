@@ -179,8 +179,8 @@ fun GameBoard(
 
                         val destOffset = when (tile.type) {
                             TileType.PILLAR -> {
-                                // Anchor bottom-center to hex center
-                                IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height).toInt())
+                                // Anchor center of bottom half to hex center
+                                IntOffset((screenPos.x - destSize.width / 2).toInt(), (screenPos.y - destSize.height * 0.75f).toInt())
                             }
                             TileType.GOAL_TABLE -> {
                                 // Anchor bottom-center to hex center
@@ -192,7 +192,7 @@ fun GameBoard(
                             }
                         }
 
-                        val shouldClip = tile.type == TileType.FLOOR
+                        val shouldClip = tile.type == TileType.FLOOR || tile.type.name.startsWith("EDGE_")
                         if (shouldClip) {
                             clipPath(createHexPath(screenPos, wPx, hPx)) {
                                 drawImage(
