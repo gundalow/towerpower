@@ -40,4 +40,21 @@ class MainViewModelTest {
         assertNotNull(state.startPosition)
         assertNotNull(state.endPosition)
     }
+
+    @Test
+    fun `availableTowers have correct descriptions`() = runBlocking {
+        val application = mockk<Application>(relaxed = true)
+        val settingsRepository = mockk<SettingsRepository>()
+        every { settingsRepository.settingsFlow } returns kotlinx.coroutines.flow.flowOf(com.messark.tower.model.Settings())
+
+        val viewModel = MainViewModel(application, settingsRepository)
+        val towers = viewModel.availableTowers.value
+
+        assertEquals(5, towers.size)
+        assertEquals("Creates slowing puddles", towers.find { it.name == "Teh Tarik" }?.description)
+        assertEquals("Fast area damage", towers.find { it.name == "Satay" }?.description)
+        assertEquals("High single-target damage", towers.find { it.name == "Chicken Rice" }?.description)
+        assertEquals("Massive damage, slow fire", towers.find { it.name == "Durian" }?.description)
+        assertEquals("Freezes enemies in place", towers.find { it.name == "Ice Kachang" }?.description)
+    }
 }
