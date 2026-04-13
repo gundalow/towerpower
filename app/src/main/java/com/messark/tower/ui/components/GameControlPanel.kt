@@ -63,9 +63,13 @@ fun GameControlPanel(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(bottom = 2.dp)
         ) {
-            Text(text = "STALL SHOP", color = Color.White, fontSize = 12.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "v$versionName", color = Color.Gray, fontSize = 10.sp)
+            if (selectedTower != null) {
+                Text(text = selectedTower.description, color = Color.White, fontSize = 12.sp)
+            } else {
+                Text(text = "STALL SHOP", color = Color.White, fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "v$versionName", color = Color.Gray, fontSize = 10.sp)
+            }
         }
 
         LazyVerticalGrid(

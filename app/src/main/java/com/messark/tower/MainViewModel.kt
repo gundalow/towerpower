@@ -21,11 +21,11 @@ class MainViewModel @JvmOverloads constructor(
 
     private val _availableTowers = MutableStateFlow(
         listOf(
-            Tower("t1", "Teh Tarik", 150, Color.Blue, stallType = StallType.TEH_TARIK, range = 3f),
-            Tower("t2", "Satay", 200, Color.Red, stallType = StallType.SATAY, range = 2.5f, damage = 5, fireRateMs = 500),
-            Tower("t3", "Chicken Rice", 100, Color.Yellow, stallType = StallType.CHICKEN_RICE, range = 4f, damage = 15, fireRateMs = 700),
-            Tower("t4", "Durian", 300, Color(0xFF4CAF50), stallType = StallType.DURIAN, range = 3f, damage = 25, fireRateMs = 2000),
-            Tower("t5", "Ice Kachang", 250, Color.Cyan, stallType = StallType.ICE_KACHANG, range = 3.5f, damage = 2, fireRateMs = 1500)
+            Tower("t1", "Teh Tarik", 150, Color.Blue, stallType = StallType.TEH_TARIK, range = 3f, description = "Creates slowing puddles"),
+            Tower("t2", "Satay", 200, Color.Red, stallType = StallType.SATAY, range = 2.5f, damage = 5, fireRateMs = 500, description = "Fast area damage"),
+            Tower("t3", "Chicken Rice", 100, Color.Yellow, stallType = StallType.CHICKEN_RICE, range = 4f, damage = 15, fireRateMs = 700, description = "High single-target damage"),
+            Tower("t4", "Durian", 300, Color(0xFF4CAF50), stallType = StallType.DURIAN, range = 3f, damage = 25, fireRateMs = 2000, description = "Massive damage, slow fire"),
+            Tower("t5", "Ice Kachang", 250, Color.Cyan, stallType = StallType.ICE_KACHANG, range = 3.5f, damage = 2, fireRateMs = 1500, description = "Freezes enemies in place")
         )
     )
     val availableTowers: StateFlow<List<Tower>> = _availableTowers.asStateFlow()

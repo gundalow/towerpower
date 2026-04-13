@@ -40,7 +40,8 @@ data class Tower(
     val fireRateMs: Long = 1000L,
     val lastFiredMs: Long = 0L,
     val stallType: StallType = StallType.CHICKEN_RICE,
-    val rotation: Float = 0f // For Satay cone direction
+    val rotation: Float = 0f, // For Satay cone direction
+    val description: String = ""
 )
 
 enum class EnemyType {
