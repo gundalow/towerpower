@@ -1,7 +1,35 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+fun getGitCommitCount(): Int {
+    return try {
+        val stdout = java.io.ByteArrayOutputStream()
+        project.exec {
+            commandLine("git", "rev-list", "--count", "HEAD")
+            standardOutput = stdout
+        }
+        stdout.toString().trim().toInt()
+    } catch (e: Exception) {
+        1
+    }
+}
+
+fun getGitVersionName(): String {
+    return try {
+        val stdout = java.io.ByteArrayOutputStream()
+        project.exec {
+            commandLine("git", "describe", "--tags", "--always", "--dirty")
+            standardOutput = stdout
+        }
+        stdout.toString().trim()
+    } catch (e: Exception) {
+        "1.0-dev"
+    }
 }
 
 android {
@@ -12,8 +40,8 @@ android {
         applicationId = "com.messark.tower"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = getGitCommitCount()
+        versionName = getGitVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
