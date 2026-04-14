@@ -23,18 +23,11 @@ object SpriteConstants {
     val GOAL_TABLE_RECT = IntRect(1100, 430, 1363, 628)
 
     val STALL_RECTS = mapOf(
-        StallType.TEH_TARIK to IntRect(28, 678, 93, 743),
-        StallType.SATAY to IntRect(116, 678, 181, 743),
-        StallType.CHICKEN_RICE to IntRect(204, 678, 269, 743),
-        StallType.DURIAN to IntRect(292, 678, 357, 743),
-        StallType.ICE_KACHANG to IntRect(382, 678, 447, 743)
-    )
-
-    val NEW_STALL_RECTS = mapOf(
         StallType.TEH_TARIK to IntRect(22, 41, 330, 451),
         StallType.SATAY to IntRect(358, 41, 666, 451),
         StallType.CHICKEN_RICE to IntRect(22, 500, 330, 930),
-        StallType.ICE_KACHANG to IntRect(358, 500, 666, 930)
+        StallType.ICE_KACHANG to IntRect(358, 500, 666, 930),
+        StallType.DURIAN to IntRect(33, 961, 341, 1318)
     )
 
     val ENEMY_SALARYMAN_RECT = IntRect(615, 638, 665, 742)
