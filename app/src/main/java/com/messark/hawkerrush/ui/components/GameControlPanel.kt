@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.messark.hawkerrush.R
 import com.messark.hawkerrush.model.Stall
+import com.messark.hawkerrush.model.StallType
 import com.messark.hawkerrush.ui.constants.SpriteConstants
 
 @Composable
@@ -100,7 +101,6 @@ fun GameControlPanel(
                         stall = stall,
                         isSelected = selectedStall?.id == stall.id,
                         onClick = { onStallSelected(stall) },
-                        spriteSheet = spriteSheet,
                         stallsSheet = stallsSheet
                     )
                 }
@@ -185,12 +185,9 @@ fun StallSlot(
     stall: Stall,
     isSelected: Boolean,
     onClick: () -> Unit,
-    spriteSheet: ImageBitmap,
     stallsSheet: ImageBitmap
 ) {
-    val newStallRect = SpriteConstants.NEW_STALL_RECTS[stall.stallType]
-    val spriteRect = newStallRect ?: SpriteConstants.STALL_RECTS[stall.stallType] ?: SpriteConstants.STALL_RECTS.values.first()
-    val isNewStall = newStallRect != null
+    val spriteRect = SpriteConstants.STALL_RECTS[stall.stallType] ?: SpriteConstants.STALL_RECTS[StallType.CHICKEN_RICE]!!
 
     Box(
         modifier = Modifier
@@ -205,9 +202,9 @@ fun StallSlot(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Canvas(modifier = Modifier.size(32.dp)) {
+            Canvas(modifier = Modifier.size(width = 24.dp, height = 32.dp)) {
                 drawImage(
-                    image = if (isNewStall) stallsSheet else spriteSheet,
+                    image = stallsSheet,
                     srcOffset = spriteRect.topLeft,
                     srcSize = spriteRect.size,
                     dstOffset = IntOffset.Zero,
