@@ -235,35 +235,23 @@ fun GameBoard(
 
                 // 3. Stalls
                 tile.stall?.let { stall ->
-                    val newStallRect = SpriteConstants.NEW_STALL_RECTS[stall.stallType]
-                    val stallSrcRect = newStallRect ?: SpriteConstants.STALL_RECTS[stall.stallType] ?: SpriteConstants.STALL_RECTS[StallType.CHICKEN_RICE]!!
-                    val isNewStall = newStallRect != null
+                    val stallSrcRect = SpriteConstants.STALL_RECTS[stall.stallType] ?: SpriteConstants.STALL_RECTS[StallType.CHICKEN_RICE]!!
 
                     drawables.add(DrawableEntity(
                         q = coord.q.toFloat(),
                         r = coord.r.toFloat(),
                         zOrder = 3,
                         draw = {
-                            if (isNewStall) {
-                                val targetWidth = wPx * 0.8f
-                                val scale = targetWidth / stallSrcRect.width
-                                val targetHeight = stallSrcRect.height * scale
-                                drawSprite(
-                                    srcRect = stallSrcRect,
-                                    destCenter = screenPos,
-                                    destSize = Size(targetWidth, targetHeight),
-                                    anchor = Offset(0.5f, 0.8f), // Anchor similar to pillars
-                                    bitmap = stallsSheet
-                                )
-                            } else {
-                                val scale = wPx / 101f
-                                val size = 65f * scale
-                                drawSprite(
-                                    srcRect = stallSrcRect,
-                                    destCenter = screenPos,
-                                    destSize = Size(size, size)
-                                )
-                            }
+                            val targetWidth = wPx * 0.8f
+                            val scale = targetWidth / stallSrcRect.width
+                            val targetHeight = stallSrcRect.height * scale
+                            drawSprite(
+                                srcRect = stallSrcRect,
+                                destCenter = screenPos,
+                                destSize = Size(targetWidth, targetHeight),
+                                anchor = Offset(0.5f, 0.8f), // Anchor similar to pillars
+                                bitmap = stallsSheet
+                            )
 
                             if (selectedBoardStall == coord) {
                                 val hexPath = createHexPath(screenPos, wPx, hPx)
