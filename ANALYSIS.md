@@ -11,7 +11,35 @@ Unlike fixed-path tower defense games, Hawker Rush allows for **dynamic mazing**
 
 ---
 
-## 2. Item Analysis (Stalls)
+## 2. Math & Efficiency Analysis (DPS & ROI)
+
+Using the base stats and upgrade logic from the source, we can calculate the true efficiency of each stall.
+
+### 2.1 Base Efficiency (Level 0)
+| Stall Type | Cost | DPS (Raw) | DPS per 100g | Targeting |
+| :--- | :--- | :--- | :--- | :--- |
+| **Chicken Rice** | 100 | **21.43** | **21.43** | Homing |
+| **Satay** | 200 | 20.00 | 10.00 | Fixed AoE |
+| **Durian** | 300 | 12.50 | 4.17 | Homing AoE |
+| **Ice Kachang** | 250 | 1.33 | 0.53 | Homing Freeze |
+| **Teh Tarik** | 150 | 0.00 | 0.00 | Puddle Slow |
+
+**Critical Insight:** **Chicken Rice** is over **2x more cost-efficient** than Satay and **5x more efficient** than Durian for single-target damage. Build these for bosses.
+
+### 2.2 Upgrade ROI (Return on Investment)
+When you spend gold to upgrade, the game randomly chooses between Damage/Range or Fire Rate. The ROI on damage is significantly higher:
+
+| Stall Type | Base DPS | Dmg Up DPS | Rate Up DPS | Dmg ROI% | Rate ROI% |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Chicken Rice | 21.43 | 27.14 | 23.81 | **5.71%** | 2.38% |
+| Satay | 20.00 | 24.67 | 22.22 | 2.33% | 1.11% |
+| Durian | 12.50 | 15.50 | 13.89 | 1.00% | 0.46% |
+
+**Key Takeaway:** Damage upgrades are **~2.4x more efficient** than rate upgrades. Because upgrades are random, it is statistically better to **expand your board with Level 0 stalls** before fishing for upgrades.
+
+---
+
+## 3. Item Analysis (Stalls)
 There are five types of stalls, each with distinct roles:
 
 | Stall Type | Cost | DMG | Rate | Range | Targeting | Special Effect |
@@ -26,7 +54,7 @@ There are five types of stalls, each with distinct roles:
 
 ---
 
-## 3. Enemy Behavior & Scaling
+## 4. Enemy Behavior & Scaling
 Enemies have varied attributes and behaviors:
 
 - **Salaryman:** The baseline enemy. Fast (0.08 speed) but low health.
@@ -41,14 +69,58 @@ The game uses exponential scaling:
 
 ---
 
-## 4. Scoring & Economy
+## 5. Scoring & Economy
 - **Gold/Score:** Earned by defeating enemies. Standard enemies grant 20, Delivery Riders grant 100.
 - **Refunds:** Selling a stall returns 50% of the total investment (Base cost + Upgrades).
 - **Upgrades:** Upgrading a stall costs its base price and provides a random boost to Damage, Range, Fire Rate, or Special Effects (AoE/Duration).
 
 ---
 
-## 5. Winning Strategies
+## 6. Optimal Board Layouts (Mazing)
+
+The goal is to maximize the time enemies spend in "Kill Zones." On an 8-column map, the "Snake" or "S-Curve" is dominant.
+
+### 5.1 The "Wide Snake" (8-Width Map)
+Legend: `[S]` = Start, `[G]` = Goal, `[T]` = Tower, `.` = Path
+
+```text
+Row 0:  .  .  .  .  .  .  .  [G]  (Goal Table)
+Row 1:  . [T][T][T][T][T][T]  .
+Row 2:  .  .  .  .  .  .  .  .
+Row 3: [T][T][T][T][T][T] .  .
+Row 4:  .  .  .  .  .  .  .  .
+Row 5:  . [T][T][T][T][T][T]  .
+Row 6:  .  .  .  .  .  .  .  .
+Row 7: [S] .  .  .  .  .  .  .  (Start)
+```
+*Note: This layout forces enemies to walk 7 tiles horizontally for every 2 tiles vertically.*
+
+### 5.2 The "Kill Zone" Hub
+Position your most expensive towers (Durian/Ice Kachang) at the "U-turns" of your maze. This allows the tower to hit the enemy as they approach, as they turn, and as they leave.
+
+```text
+    [Path] -> [Path] -> [P]
+                         |
+    [T] <- [T] <- [T]    v
+     |             ^    [P]
+     v             |     |
+    [P] -> [P] -> [K] -> [P]
+```
+`[K]` = Kill Zone Hub. A tower at `[K]` covers 4-5 different path segments in an S-curve.
+
+---
+
+## 7. Financial Strategy: The "Wave Budget"
+
+### 6.1 Early Game (Waves 1-6)
+- **Spend Aggressively:** You start with 500 gold. Place 3 Chicken Rice and 1 Teh Tarik immediately.
+- **Save for Wave 10:** Boss waves provide a 44% budget jump for enemies. Ensure you have at least one **Ice Kachang** by wave 10.
+
+### 6.2 Mid-Late Game (Waves 7+)
+- **HP Scaling:** Enemies gain 10% HP per wave. If your DPS doesn't grow by 10% per wave, you will leak.
+- **The "Sell & Rebuild" Strategy:** In emergencies, sell a stall at the back of the maze (50% refund) to place an **Ice Kachang** at the front. The time gained from the freeze is often worth more than the lost raw damage.
+
+## 8. Strategic Conclusions
 
 ### A. The "S-Curve" Maze
 Don't just place towers randomly. Build a corridor that forces enemies to walk back and forth across the width of the map. This multiplies the effectiveness of every stall you place.
