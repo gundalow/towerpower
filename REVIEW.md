@@ -230,23 +230,41 @@ object Pathfinding {
 
 ---
 
-## 4. Other Recommendations
+## 4. Haptic Feedback Enhancements
 
-### 4.1 Haptic Feedback Debounce
-*   **What**: Haptic feedback is throttled to once per second.
-*   **Why**: Makes feedback feel sluggish during dense waves.
-*   **How**: Reduce debounce to 100-200ms.
+### 4.1 "Unnoticeable" Haptic Feedback Triggers
+*   **What**: Haptic feedback is implemented but often unnoticeable.
+*   **Why**: Two factors contribute:
+    1. A 1000ms debounce in `MainViewModel.kt` during enemy deaths means if multiple enemies die quickly, only the first one vibrates.
+    2. The use of `HapticFeedbackType.LongPress` in `MainActivity.kt` is technically a very long, low-frequency buzz that doesn't feel like a "hit" or "death" impact.
+*   **How**: Reduce the death debounce and switch to a more sharp feedback type like `TextHandleMove` or `ContextClick` (if available on the OS version) or just a standard vibrate.
 
 ```kotlin
-// Example fix in MainViewModel.kt
+// Fix 1: Reduce debounce in MainViewModel.kt
 <<<<<<< SEARCH
                         if (currentTime - lastHapticTimeMs >= 1000) {
 =======
-                        if (currentTime - lastHapticTimeMs >= 200) {
+                        if (currentTime - lastHapticTimeMs >= 150) {
+>>>>>>> REPLACE
+
+// Fix 2: Change feedback type in MainActivity.kt
+<<<<<<< SEARCH
+                    viewModel.hapticEvents.collect {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+=======
+                    viewModel.hapticEvents.collect {
+                        // Use a more distinct feedback for gameplay events
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
 >>>>>>> REPLACE
 ```
 
-### 4.2 Pathfinding Unit Tests
+---
+
+## 5. Other Recommendations
+
+### 5.1 Pathfinding Unit Tests
 *   **What**: Lack of automated verification for core navigation logic.
 *   **Why**: High risk of breaking game flow with map generation or stall logic changes.
 *   **How**: Implement standard A* test cases.
@@ -263,7 +281,7 @@ fun testPathfindingReturnsNullWhenBlocked() {
 }
 ```
 
-### 4.3 Externalized Sprite Data
+### 5.2 Externalized Sprite Data
 *   **What**: Sprite coordinates are hardcoded in `SpriteConstants.kt`.
 *   **Why**: Hard to maintain and update without recompilation.
 *   **How**: Move to a JSON resource.
