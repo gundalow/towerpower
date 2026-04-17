@@ -566,6 +566,7 @@ fun GameScreen(
                     gold = gameState.gold,
                     health = gameState.health,
                     score = gameState.score,
+                    currentWave = gameState.currentWave,
                     availableStalls = availableStalls,
                     selectedStall = gameState.selectedStallType,
                     selectedBoardStall = gameState.selectedBoardStall?.let { gameState.hexes[it]?.stall },
