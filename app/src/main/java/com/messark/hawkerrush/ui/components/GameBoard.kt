@@ -33,6 +33,7 @@ fun GameBoard(
     projectiles: List<Projectile>,
     puddles: List<StickyPuddle>,
     visualEffects: List<VisualEffect>,
+    arrivedEnemies: List<EnemyType>,
     selectedBoardStall: AxialCoordinate?,
     onCellClick: (AxialCoordinate) -> Unit,
     modifier: Modifier = Modifier
@@ -216,19 +217,91 @@ fun GameBoard(
                             zOrder = if (isEdge) 1 else 2,
                             draw = {
                                 val scale = wPx / 101f
-                                val dSize = Size(rect.width * scale, rect.height * scale)
-                                val anchor = when (tile.type) {
-                                    TileType.PILLAR -> Offset(0.5f, 0.8f)
-                                    TileType.GOAL_TABLE -> Offset(0.5f, 0.75f)
-                                    else -> Offset(0.5f, 0.5f)
+                                if (tile.type == TileType.GOAL_TABLE) {
+                                    val dSize = Size(rect.width * scale, rect.height * scale)
+                                    // Draw Table Base
+                                    drawSprite(
+                                        srcRect = SpriteConstants.TABLE_BASE_RECT,
+                                        destCenter = screenPos,
+                                        destSize = dSize,
+                                        anchor = Offset(0.5f, 0.75f)
+                                    )
+
+                                    // Render 10 seats
+                                    val seatPositions = listOf(
+                                        // South side (facing North)
+                                        Triple(Offset(-0.3f, 0.1f), "S", SpriteConstants.CHAIR_EMPTY_S),
+                                        Triple(Offset(0f, 0.15f), "S", SpriteConstants.CHAIR_EMPTY_S),
+                                        Triple(Offset(0.3f, 0.1f), "S", SpriteConstants.CHAIR_EMPTY_S),
+                                        // North side (facing South)
+                                        Triple(Offset(-0.3f, -0.4f), "N", SpriteConstants.CHAIR_EMPTY_N),
+                                        Triple(Offset(0f, -0.45f), "N", SpriteConstants.CHAIR_EMPTY_N),
+                                        Triple(Offset(0.3f, -0.4f), "N", SpriteConstants.CHAIR_EMPTY_N),
+                                        // West side (facing East)
+                                        Triple(Offset(-0.5f, -0.1f), "W", SpriteConstants.CHAIR_EMPTY_W),
+                                        Triple(Offset(-0.5f, -0.25f), "W", SpriteConstants.CHAIR_EMPTY_W),
+                                        // East side (facing West)
+                                        Triple(Offset(0.5f, -0.1f), "E", SpriteConstants.CHAIR_EMPTY_E),
+                                        Triple(Offset(0.5f, -0.25f), "E", SpriteConstants.CHAIR_EMPTY_E)
+                                    )
+
+                                    seatPositions.forEachIndexed { index, (offsetMult, dir, emptyRect) ->
+                                        val seatPos = screenPos + Offset(offsetMult.x * dSize.width, offsetMult.y * dSize.height)
+                                        val arrivedEnemy = arrivedEnemies.getOrNull(index)
+
+                                        if (arrivedEnemy != null) {
+                                            // Draw occupied chair
+                                            val occupiedRect = when(dir) {
+                                                "N" -> SpriteConstants.CHAIR_OCCUPIED_GENERIC_N
+                                                "S" -> SpriteConstants.CHAIR_OCCUPIED_GENERIC_S
+                                                "E" -> SpriteConstants.CHAIR_OCCUPIED_GENERIC_E
+                                                else -> SpriteConstants.CHAIR_OCCUPIED_GENERIC_W
+                                            }
+                                            drawSprite(
+                                                srcRect = occupiedRect,
+                                                destCenter = seatPos,
+                                                destSize = Size(32f * scale * 2, 48f * scale * 2), // Enlarged for visibility
+                                                anchor = Offset(0.5f, 0.5f)
+                                            )
+                                        } else {
+                                            // Draw empty chair
+                                            drawSprite(
+                                                srcRect = emptyRect,
+                                                destCenter = seatPos,
+                                                destSize = Size(32f * scale * 2, 32f * scale * 2),
+                                                anchor = Offset(0.5f, 0.5f)
+                                            )
+                                        }
+                                    }
+
+                                    // Draw food if lives are lost
+                                    if (arrivedEnemies.isNotEmpty()) {
+                                        val foodRects = listOf(SpriteConstants.FOOD_SATAY_RECT, SpriteConstants.FOOD_RICE_RECT, SpriteConstants.FOOD_DRINK_RECT)
+                                        for (i in 0 until minOf(arrivedEnemies.size, 5)) {
+                                            val foodRect = foodRects[i % foodRects.size]
+                                            val foodOffset = Offset((i - 2) * 0.15f * dSize.width, -0.15f * dSize.height)
+                                            drawSprite(
+                                                srcRect = foodRect,
+                                                destCenter = screenPos + foodOffset,
+                                                destSize = Size(24f * scale * 2, 24f * scale * 2),
+                                                anchor = Offset(0.5f, 0.5f)
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    val dSize = Size(rect.width * scale, rect.height * scale)
+                                    val anchor = when (tile.type) {
+                                        TileType.PILLAR -> Offset(0.5f, 0.8f)
+                                        else -> Offset(0.5f, 0.5f)
+                                    }
+                                    drawSprite(
+                                        srcRect = rect,
+                                        destCenter = screenPos,
+                                        destSize = dSize,
+                                        anchor = anchor,
+                                        clipHex = isEdge
+                                    )
                                 }
-                                drawSprite(
-                                    srcRect = rect,
-                                    destCenter = screenPos,
-                                    destSize = dSize,
-                                    anchor = anchor,
-                                    clipHex = isEdge
-                                )
                             }
                         ))
                     }

@@ -558,6 +558,7 @@ fun GameScreen(
                     projectiles = gameState.projectiles,
                     puddles = gameState.puddles,
                     visualEffects = gameState.visualEffects,
+                    arrivedEnemies = gameState.arrivedEnemies,
                     selectedBoardStall = gameState.selectedBoardStall,
                     onCellClick = { coord -> viewModel.onCellClick(coord) },
                     modifier = Modifier.weight(LayoutConstants.BOARD_HEIGHT_FRACTION)

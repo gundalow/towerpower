@@ -21,6 +21,23 @@ object SpriteConstants {
     val EDGE_TOP_RECT = IntRect(830, 267, 931, 360)
     val PILLAR_RECT = IntRect(31, 501, 101, 627)
     val GOAL_TABLE_RECT = IntRect(1100, 430, 1363, 628)
+    val TABLE_BASE_RECT = IntRect(1100, 430, 1363, 628) // Placeholder for table surface only
+
+    // Placeholder rectangles for chairs and seated customers (using dummy coords for now)
+    // N = Facing South (at top), S = Facing North (at bottom), E = Facing West (at right), W = Facing East (at left)
+    val CHAIR_EMPTY_N = IntRect(0, 0, 32, 32)
+    val CHAIR_EMPTY_S = IntRect(0, 32, 32, 64)
+    val CHAIR_EMPTY_E = IntRect(0, 64, 32, 96)
+    val CHAIR_EMPTY_W = IntRect(0, 96, 32, 128)
+
+    val CHAIR_OCCUPIED_GENERIC_N = IntRect(32, 0, 64, 48)
+    val CHAIR_OCCUPIED_GENERIC_S = IntRect(32, 48, 64, 96)
+    val CHAIR_OCCUPIED_GENERIC_E = IntRect(32, 96, 64, 144)
+    val CHAIR_OCCUPIED_GENERIC_W = IntRect(32, 144, 64, 192)
+
+    val FOOD_SATAY_RECT = IntRect(64, 0, 88, 24)
+    val FOOD_RICE_RECT = IntRect(64, 24, 88, 48)
+    val FOOD_DRINK_RECT = IntRect(64, 48, 88, 72)
 
     val STALL_RECTS = mapOf(
         StallType.TEH_TARIK to IntRect(22, 41, 330, 451),
