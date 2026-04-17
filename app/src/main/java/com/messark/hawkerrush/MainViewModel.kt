@@ -309,7 +309,10 @@ class MainViewModel @JvmOverloads constructor(
 
                 val targetIndex = enemy.currentPathIndex + 1
                 if (targetIndex >= enemy.path.size) {
-                    newState = newState.copy(health = Math.max(0, newState.health - 1))
+                    newState = newState.copy(
+                        health = Math.max(0, newState.health - 1),
+                        arrivedEnemies = newState.arrivedEnemies + enemy.type
+                    )
                     return@mapNotNull null
                 }
 

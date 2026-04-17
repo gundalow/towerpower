@@ -121,6 +121,7 @@ data class GameState(
     val currentScreen: AppScreen = AppScreen.LOADING,
     val hexes: Map<AxialCoordinate, HexTile> = emptyMap(),
     val health: Int = 10, // 10 tables
+    val arrivedEnemies: List<EnemyType> = emptyList(),
     val gold: Int = 500,
     val selectedStallType: Stall? = null,
     val selectedBoardStall: AxialCoordinate? = null,
