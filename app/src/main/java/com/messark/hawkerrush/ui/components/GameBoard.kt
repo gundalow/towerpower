@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.messark.hawkerrush.R
 import com.messark.hawkerrush.model.*
@@ -40,6 +41,7 @@ fun GameBoard(
 ) {
     val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet)
     val stallsSheet = ImageBitmap.imageResource(id = R.drawable.stalls)
+    val placeholderRed = ImageBitmap.imageResource(id = R.drawable.placeholder_red)
 
     val hexWidth = 47.dp // Reduced from 48.dp to bring hexes closer
     val hexHeight = hexWidth * 91f / 101f
@@ -258,18 +260,20 @@ fun GameBoard(
                                                 else -> SpriteConstants.CHAIR_OCCUPIED_GENERIC_W
                                             }
                                             drawSprite(
-                                                srcRect = occupiedRect,
+                                                srcRect = IntRect(0, 0, 32, 32),
                                                 destCenter = seatPos,
-                                                destSize = Size(32f * scale * 2, 48f * scale * 2), // Enlarged for visibility
-                                                anchor = Offset(0.5f, 0.5f)
+                                                destSize = Size(32f * scale * 2, 48f * scale * 2),
+                                                anchor = Offset(0.5f, 0.5f),
+                                                bitmap = placeholderRed
                                             )
                                         } else {
-                                            // Draw empty chair
+                                            // Draw empty chair (blue-ish placeholder)
                                             drawSprite(
-                                                srcRect = emptyRect,
+                                                srcRect = IntRect(0, 0, 32, 32),
                                                 destCenter = seatPos,
                                                 destSize = Size(32f * scale * 2, 32f * scale * 2),
-                                                anchor = Offset(0.5f, 0.5f)
+                                                anchor = Offset(0.5f, 0.5f),
+                                                bitmap = placeholderRed // Using red for both as a quick CLI fix
                                             )
                                         }
                                     }
@@ -281,10 +285,11 @@ fun GameBoard(
                                             val foodRect = foodRects[i % foodRects.size]
                                             val foodOffset = Offset((i - 2) * 0.15f * dSize.width, -0.15f * dSize.height)
                                             drawSprite(
-                                                srcRect = foodRect,
+                                                srcRect = IntRect(0, 0, 32, 32),
                                                 destCenter = screenPos + foodOffset,
                                                 destSize = Size(24f * scale * 2, 24f * scale * 2),
-                                                anchor = Offset(0.5f, 0.5f)
+                                                anchor = Offset(0.5f, 0.5f),
+                                                bitmap = placeholderRed
                                             )
                                         }
                                     }
