@@ -56,7 +56,9 @@ data class Stall(
     val targetMode: TargetMode = TargetMode.FIRST,
     val aoeRadius: Float = 1.0f,
     val effectDurationMs: Long = 3000L,
-    val freezeDurationMs: Long = 500L
+    val freezeDurationMs: Long = 500L,
+    val uniqueTargetIds: Set<String> = emptySet(),
+    val kills: Int = 0
 ) {
     fun getUpgradeBenefit(category: String, level: Int, baseStall: Stall): String {
         return when (category) {
@@ -134,7 +136,8 @@ data class Projectile(
     val freezeDurationMs: Long = 0L,
     val isArc: Boolean = false,
     val startPosition: PreciseAxialCoordinate? = null,
-    val sourceStallType: StallType? = null
+    val sourceStallType: StallType? = null,
+    val sourceStallCoord: AxialCoordinate? = null
 )
 
 enum class VisualEffectType {
@@ -145,7 +148,8 @@ data class StickyPuddle(
     val id: String,
     val position: PreciseAxialCoordinate,
     val spawnTimeMs: Long,
-    val durationMs: Long = 3000L
+    val durationMs: Long = 3000L,
+    val sourceStallCoord: AxialCoordinate? = null
 )
 
 data class VisualEffect(
