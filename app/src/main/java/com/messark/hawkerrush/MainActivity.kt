@@ -569,6 +569,7 @@ fun GameScreen(
                     puddles = gameState.puddles,
                     visualEffects = gameState.visualEffects,
                     selectedBoardStall = gameState.selectedBoardStall,
+                    gold = gameState.gold,
                     onCellClick = { coord -> viewModel.onCellClick(coord) },
                     modifier = Modifier.weight(LayoutConstants.BOARD_HEIGHT_FRACTION)
                 )

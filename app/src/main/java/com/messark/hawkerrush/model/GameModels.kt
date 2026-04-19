@@ -58,6 +58,11 @@ data class Stall(
     val effectDurationMs: Long = 3000L,
     val freezeDurationMs: Long = 500L
 ) {
+    fun getUpgradeCost(): Int {
+        val nextUpgradeIndex = upgradeCount + 1
+        return Math.round(cost * (0.2f + nextUpgradeIndex * 0.1f)).toInt()
+    }
+
     fun getUpgradeBenefit(category: String, level: Int, baseStall: Stall): String {
         return when (category) {
             "Damage" -> {

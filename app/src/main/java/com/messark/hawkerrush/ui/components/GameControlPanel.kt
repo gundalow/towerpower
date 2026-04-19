@@ -69,9 +69,7 @@ fun GameControlPanel(
 
         if (selectedBoardStall != null) {
             val baseStall = availableStalls.find { it.stallType == selectedBoardStall.stallType } ?: selectedBoardStall
-            val baseCost = baseStall.cost
-            val nextUpgradeIndex = selectedBoardStall.upgradeCount + 1
-            val upgradeCost = Math.round(baseCost * (0.2f + nextUpgradeIndex * 0.1f)).toInt()
+            val upgradeCost = selectedBoardStall.getUpgradeCost()
 
             StallConsole(
                 stall = selectedBoardStall,

@@ -715,8 +715,8 @@ class MainViewModel @JvmOverloads constructor(
             val stall = tile.stall ?: return@update state
 
             val baseStall = _availableStalls.value.find { it.stallType == stall.stallType } ?: stall
+            val upgradeCost = stall.getUpgradeCost()
             val nextUpgradeLevel = stall.upgradeCount + 1
-            val upgradeCost = Math.round(baseStall.cost * (0.2f + nextUpgradeLevel * 0.1f)).toInt()
 
             if (state.gold >= upgradeCost) {
                 val upgradeTypeIndex = Random().nextInt(3) // 0: Damage/Range, 1: Rate, 2: Special (Radius/Duration)
