@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.messark.hawkerrush.model.*
+import com.messark.hawkerrush.model.HapticType
 import com.messark.hawkerrush.utils.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -44,8 +45,8 @@ class MainViewModel @JvmOverloads constructor(
     private var gameJob: Job? = null
     private var lastHapticTimeMs = 0L
 
-    private val _hapticEvents = MutableSharedFlow<Unit>()
-    val hapticEvents: SharedFlow<Unit> = _hapticEvents.asSharedFlow()
+    private val _hapticEvents = MutableSharedFlow<HapticType>()
+    val hapticEvents: SharedFlow<HapticType> = _hapticEvents.asSharedFlow()
 
     init {
         initializeGame()
@@ -72,10 +73,10 @@ class MainViewModel @JvmOverloads constructor(
         _logoVisible.value = false
     }
 
-    fun triggerHaptic() {
+    fun triggerHaptic(type: HapticType = HapticType.BUTTON_CLICK) {
         viewModelScope.launch {
             if (settingsRepository.settingsFlow.first().hapticEnabled) {
-                _hapticEvents.emit(Unit)
+                _hapticEvents.emit(type)
             }
         }
     }
@@ -367,6 +368,7 @@ class MainViewModel @JvmOverloads constructor(
             val targetIndex = enemy.currentPathIndex + 1
             if (targetIndex >= enemy.path.size) {
                 mutableState = mutableState.copy(health = Math.max(0, mutableState.health - 1))
+                triggerHaptic(HapticType.HEALTH_LOSS)
                 return@mapNotNull null
             }
 
@@ -603,9 +605,7 @@ class MainViewModel @JvmOverloads constructor(
                     updatedScore += enemy.reward
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastHapticTimeMs >= 1000) {
-                        viewModelScope.launch {
-                            if (settingsRepository.settingsFlow.first().hapticEnabled) _hapticEvents.emit(Unit)
-                        }
+                        triggerHaptic(HapticType.ENEMY_DEATH)
                         lastHapticTimeMs = currentTime
                     }
                     enemy.copy(health = 0, isDead = true)

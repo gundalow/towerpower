@@ -18,9 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.util.Log
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import android.view.animation.OvershootInterpolator
@@ -38,6 +42,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import com.messark.hawkerrush.model.AppScreen
+import com.messark.hawkerrush.model.HapticType
 import com.messark.hawkerrush.model.HighScore
 import com.messark.hawkerrush.model.Settings
 import com.messark.hawkerrush.ui.components.GameBoard
@@ -101,16 +106,63 @@ class MainActivity : ComponentActivity() {
                 val settingsRepository = remember { SettingsRepository(application) }
                 val settings by settingsRepository.settingsFlow.collectAsState(initial = com.messark.hawkerrush.model.Settings())
                 val availableStalls by viewModel.availableStalls.collectAsState()
-                val haptic = LocalHapticFeedback.current
+                val context = LocalContext.current
+                val vibrator = remember {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                        vibratorManager.defaultVibrator
+                    } else {
+                        @Suppress("DEPRECATION")
+                        context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    }
+                }
 
                 LaunchedEffect(Unit) {
+                    // Debug vibration settings
+
+                    val hasVibrator = vibrator.hasVibrator()
+                    val hapticsEnabled = android.provider.Settings.System.getInt(
+                        context.contentResolver,
+                        "haptic_feedback_enabled",
+                        0
+                    ) == 1
+
+                    Log.d("HawkerRushDebug", "Vibrator present: $hasVibrator")
+                    Log.d("HawkerRushDebug", "System haptics enabled: $hapticsEnabled")
+                    Log.d("HawkerRushDebug", "SDK INT: ${Build.VERSION.SDK_INT}")
+
                     delay(1000)
                     viewModel.navigateTo(AppScreen.MAIN_MENU)
                 }
 
                 LaunchedEffect(Unit) {
-                    viewModel.hapticEvents.collect {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.hapticEvents.collect { hapticType ->
+                        if (vibrator.hasVibrator()) {
+                            val effect = when (hapticType) {
+                                HapticType.BUTTON_CLICK -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+                                    } else {
+                                        VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE)
+                                    }
+                                }
+                                HapticType.ENEMY_DEATH -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+                                    } else {
+                                        VibrationEffect.createOneShot(10, VibrationEffect.DEFAULT_AMPLITUDE)
+                                    }
+                                }
+                                HapticType.HEALTH_LOSS -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
+                                    } else {
+                                        VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+                                    }
+                                }
+                            }
+                            vibrator.vibrate(effect)
+                        }
                     }
                 }
 
