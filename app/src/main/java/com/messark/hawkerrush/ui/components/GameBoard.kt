@@ -4,14 +4,13 @@ import android.graphics.Rect
 import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -47,25 +46,13 @@ fun GameBoard(
     val stallsSheet = ImageBitmap.imageResource(id = R.drawable.stalls)
     val enemiesSheet = ImageBitmap.imageResource(id = R.drawable.enemies)
 
-    val infiniteTransition = rememberInfiniteTransition(label = "UpgradePulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "PulseScale"
-    )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "PulseAlpha"
-    )
+    val upgradePaint = remember {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.WHITE
+            textAlign = android.graphics.Paint.Align.CENTER
+            isFakeBoldText = true
+        }
+    }
 
     val hexWidth = 47.dp // Reduced from 48.dp to bring hexes closer
     val hexHeight = hexWidth * 91f / 101f
@@ -328,45 +315,41 @@ fun GameBoard(
                         ))
                     }
 
-                    // Upgrade Indicator (Pulsing Green Dot)
-                    if (gold >= stall.getUpgradeCost()) {
-                        drawables.add(DrawableEntity(
-                            q = coord.q.toFloat(),
-                            r = coord.r.toFloat(),
-                            zOrder = 11,
-                            draw = {
-                                val indicatorRadius = 10.dp.toPx() * pulseScale
-                                val indicatorPos = Offset(screenPos.x + wPx * 0.25f, screenPos.y - hPx * 0.4f)
+                    // Upgrade Indicator
+                    drawables.add(DrawableEntity(
+                        q = coord.q.toFloat(),
+                        r = coord.r.toFloat(),
+                        zOrder = 11,
+                        draw = {
+                            val canAfford = gold >= stall.getUpgradeCost()
+                            val indicatorColor = if (canAfford) Color.Green else Color.Gray
+                            val indicatorRadius = 7.dp.toPx()
+                            // Positioned at bottom right relative to center (screenPos)
+                            val indicatorPos = Offset(screenPos.x + wPx * 0.35f, screenPos.y + hPx * 0.35f)
 
-                                drawCircle(
-                                    color = Color.Green.copy(alpha = pulseAlpha),
-                                    radius = indicatorRadius,
-                                    center = indicatorPos
-                                )
-                                drawCircle(
-                                    color = Color.White,
-                                    radius = indicatorRadius,
-                                    center = indicatorPos,
-                                    style = Stroke(width = 1.dp.toPx())
-                                )
+                            drawCircle(
+                                color = indicatorColor,
+                                radius = indicatorRadius,
+                                center = indicatorPos
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = indicatorRadius,
+                                center = indicatorPos,
+                                style = Stroke(width = 1.dp.toPx())
+                            )
 
-                                drawIntoCanvas { canvas ->
-                                    val paint = android.graphics.Paint().apply {
-                                        color = android.graphics.Color.WHITE
-                                        textSize = 12.dp.toPx()
-                                        textAlign = android.graphics.Paint.Align.CENTER
-                                        isFakeBoldText = true
-                                    }
-                                    canvas.nativeCanvas.drawText(
-                                        stall.upgradeCount.toString(),
-                                        indicatorPos.x,
-                                        indicatorPos.y + paint.textSize / 3f,
-                                        paint
-                                    )
-                                }
+                            drawIntoCanvas { canvas ->
+                                upgradePaint.textSize = 9.dp.toPx()
+                                canvas.nativeCanvas.drawText(
+                                    stall.upgradeCount.toString(),
+                                    indicatorPos.x,
+                                    indicatorPos.y + upgradePaint.textSize / 3f,
+                                    upgradePaint
+                                )
                             }
-                        ))
-                    }
+                        }
+                    ))
                 }
             }
 
