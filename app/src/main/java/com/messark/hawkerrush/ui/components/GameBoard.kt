@@ -324,8 +324,8 @@ fun GameBoard(
                             val canAfford = gold >= stall.getUpgradeCost()
                             val indicatorColor = if (canAfford) Color.Green else Color.Gray
                             val indicatorRadius = 7.dp.toPx()
-                            // Positioned at bottom right relative to center (screenPos)
-                            val indicatorPos = Offset(screenPos.x + wPx * 0.35f, screenPos.y + hPx * 0.35f)
+                            // Positioned at bottom right relative to center (screenPos), moved closer to center
+                            val indicatorPos = Offset(screenPos.x + wPx * 0.25f, screenPos.y + hPx * 0.25f)
 
                             drawCircle(
                                 color = indicatorColor,
