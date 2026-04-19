@@ -716,7 +716,6 @@ class MainViewModel @JvmOverloads constructor(
 
             val baseStall = _availableStalls.value.find { it.stallType == stall.stallType } ?: stall
             val upgradeCost = stall.getUpgradeCost()
-            val nextUpgradeLevel = stall.upgradeCount + 1
 
             if (state.gold >= upgradeCost) {
                 val upgradeTypeIndex = Random().nextInt(3) // 0: Damage/Range, 1: Rate, 2: Special (Radius/Duration)
@@ -779,7 +778,7 @@ class MainViewModel @JvmOverloads constructor(
                     aoeRadius = newAoeRadius,
                     effectDurationMs = newEffectDuration,
                     freezeDurationMs = newFreezeDuration,
-                    upgradeCount = nextUpgradeLevel,
+                    upgradeCount = stall.upgradeCount + 1,
                     totalInvestment = stall.totalInvestment + upgradeCost,
                     upgrades = mutableUpgrades
                 )
