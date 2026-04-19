@@ -5,7 +5,9 @@ This document outlines 100 ideas to extend Hawker Rush. All ideas follow the **S
 ## Structure
 Each idea includes:
 - **Concept**: Description of the idea.
-- **Implementation**: How to add it to the code conceptually.
+- **Vibe Coding Suitability**: High/Medium/Low. How effectively can an LLM/Agent implement this with minimal guidance?
+- **Vibe Implementation**: How we'd "vibe code" this (e.g., "Ask Jules to add a new enum and update the fire loop").
+- **Asset Requirement**: Code only vs New Sprites/Sound.
 - **Difficulty**: Easy/Medium/Hard + Reason.
 - **Risks**: Potential issues or regressions.
 
@@ -15,123 +17,163 @@ Each idea includes:
 
 ### Laksa Splash
 - **Concept**: A stall that shoots spicy coconut gravy, dealing splash damage in a small radius around the target.
-- **Implementation**: Create a new `StallType.LAKSA`. In `handleStallFiring`, generate a projectile with an `aoeRadius`.
-- **Difficulty**: Easy. Similar to `DURIAN` but with a smaller radius and higher fire rate.
-- **Risks**: Visual clutter if many Laksa stalls are placed.
+- **Vibe Coding Suitability**: High. Uses existing AOE logic from Durian.
+- **Vibe Implementation**: Ask the agent to clone the Durian logic but reduce the radius and increase the fire rate.
+- **Asset Requirement**: New "Laksa Bowl" sprite and orange gravy projectile.
+- **Difficulty**: Easy.
+- **Risks**: Overlapping AOE circles can cause visual lag.
 
 ### Bak Kut Teh Steam
 - **Concept**: A support stall that emits "herbal steam," buffing the attack speed of all adjacent stalls.
-- **Implementation**: In `handleStallFiring`, check for nearby stalls and temporarily reduce their `fireRateMs`.
-- **Difficulty**: Medium. Requires a new "buff" system that isn't currently in the game.
-- **Risks**: Stacking buffs might break game balance and make towers too fast.
+- **Vibe Coding Suitability**: Medium. Requires a new "buff" collection logic.
+- **Vibe Implementation**: "Hey Jules, make a stall that looks for nearby hexes and decreases their fireRateMs by 20% while active."
+- **Asset Requirement**: Code only (uses existing steam/smoke particles).
+- **Difficulty**: Medium. Requires a clean way to apply/remove buffs without permanent stat corruption.
+- **Risks**: Stacking buffs from multiple stalls could lead to infinite fire rates.
 
 ### Chilli Crab Claw
 - **Concept**: A high-damage, single-target stall that "pinches" enemies, slowing them significantly for a short duration.
-- **Implementation**: Add `StallType.CHILLI_CRAB`. High `damage` and a slow effect in `handleProjectiles`.
-- **Difficulty**: Easy. Combination of `CHICKEN_RICE` damage and `TEH_TARIK` slow.
-- **Risks**: Overlapping slows might stop enemies completely.
+- **Vibe Coding Suitability**: High. Combination of existing damage and slow logic.
+- **Vibe Implementation**: "Add a Chilli Crab stall that uses SATAY damage but adds a 50% slow effect on hit."
+- **Asset Requirement**: New sprite.
+- **Difficulty**: Easy.
+- **Risks**: Slowing bosses too much makes the game trivial.
 
 ### Kaya Toast Launcher
 - **Concept**: Rapid-fire stall that shoots slices of crispy toast. Low damage but extremely high fire rate.
-- **Implementation**: `StallType.KAYA_TOAST` with `fireRateMs = 100L` and low `damage`.
-- **Difficulty**: Easy. Just a tuning change on existing projectile logic.
-- **Risks**: Performance issues with too many projectiles on screen.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Create a stall with 100ms fire rate and 2 damage. Call it Kaya Toast."
+- **Asset Requirement**: Toast projectile sprite.
+- **Difficulty**: Easy.
+- **Risks**: Projectile count could exceed 100+ quickly.
 
 ### Rojak Mixer
 - **Concept**: Every shot has a random effect: extra damage, slow, or a small gold bonus.
-- **Implementation**: In `handleProjectiles`, use `Random` to apply different logic based on the hit.
-- **Difficulty**: Medium. Needs to handle gold generation from projectiles.
-- **Risks**: RNG can make it frustrating for players if they get "bad" rolls.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "In the projectile hit logic, add a `when(Random.nextInt(3))` block for Rojak stalls."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Medium. RNG needs to be seeded correctly to feel fair.
+- **Risks**: Getting a "Gold" roll on a boss instead of "Damage" might lose the game.
 
 ### Oyster Omelette Crit
 - **Concept**: Low base damage but has a 20% chance to deal 10x damage (a "Big Oyster" shot).
-- **Implementation**: In `handleProjectiles`, add a crit multiplier check.
-- **Difficulty**: Easy. Simple math modification in the damage calculation.
-- **Risks**: Bosses could be trivialized by a lucky string of crits.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Add a crit chance check to the damage calculation for this stall type."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Easy.
+- **Risks**: Spiky damage makes wave outcome unpredictable.
 
 ### Nasi Lemak Ikan Bilis
 - **Concept**: Shoots a swarm of small ikan bilis (anchovies) that track different targets.
-- **Implementation**: A single fire event generates multiple `Projectile` objects with slightly different target logic.
-- **Difficulty**: Medium. Requires changing the 1-to-1 firing logic.
-- **Risks**: Tracking many small projectiles can be CPU intensive on older phones.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Modify the fire method to spawn 5 projectiles instead of 1, each with a random nearby target."
+- **Asset Requirement**: Small fish sprite.
+- **Difficulty**: Medium. Targeting logic needs to be robust.
+- **Risks**: Swarm AI is more expensive to calculate.
 
 ### Otah Grill
 - **Concept**: Deals damage in a straight line, piercing through all enemies in its path.
-- **Implementation**: A projectile that doesn't disappear on first hit, but checks for all enemies along its vector.
-- **Difficulty**: Medium. Needs a line-collision check rather than a point/radius check.
-- **Risks**: Positioning becomes too critical, potentially making some map layouts too easy.
+- **Vibe Coding Suitability**: Medium. Requires line-segment collision.
+- **Vibe Implementation**: "Instead of a point check, check all enemies within a width of 0.2 along the projectile's forward vector."
+- **Asset Requirement**: Leaf-wrapped projectile.
+- **Difficulty**: Medium.
+- **Risks**: Pierce can be overpowered on straight-line paths.
 
 ### Bandung Mist
 - **Concept**: A pink mist stall that confuses enemies, causing them to walk backwards for 1 second.
-- **Implementation**: In `handleEnemyMovement`, check for a "confused" state and reverse the `targetIndex` logic.
-- **Difficulty**: Hard. Reversing pathfinding logic while maintaining movement state is tricky.
-- **Risks**: Enemies could get stuck in an infinite loop if placed correctly.
+- **Vibe Coding Suitability**: Low. Reversing pathfinding state is complex.
+- **Vibe Implementation**: "If hit by Bandung, decrement the enemy's path index instead of incrementing it for 1000ms."
+- **Asset Requirement**: Pink cloud particles.
+- **Difficulty**: Hard. Requires careful state management in the movement loop.
+- **Risks**: Infinite loops if enemies walk back into the start.
 
 ### Sugar Cane Juicer
 - **Concept**: A "battery" stall. It doesn't attack but increases the gold earned from enemies killed within its range.
-- **Implementation**: Add a range check in `handleProjectiles` when an enemy dies to see if a Sugar Cane stall is nearby.
-- **Difficulty**: Medium. Requires connecting death events to stall proximity.
-- **Risks**: Economy inflation making the late game too easy.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Add a check in the enemy death logic: if a Sugar Cane stall is in range, reward += 10."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Medium.
+- **Risks**: Economy snowballing.
 
 ### Satay Bee Hoon Slow
 - **Concept**: Covers a large area in thick peanut sauce, slowing all enemies significantly more than Teh Tarik.
-- **Implementation**: A larger `puddle` with a higher speed reduction multiplier.
-- **Difficulty**: Easy. Just a variant of `TEH_TARIK`.
-- **Risks**: Visual similarity to Satay stall might confuse players.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Clone Teh Tarik but change the color to brown and the slow multiplier to 0.3."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Easy.
+- **Risks**: Visual confusion with Satay stall projectiles.
 
 ### Fried Carrot Cake (Black vs White)
 - **Concept**: A stall with a toggle. "Black" mode deals AOE fire damage, "White" mode deals high single-target physical damage.
-- **Implementation**: Add a toggle button in the `StallConsole`. Update the `Stall` model with a `mode` property.
-- **Difficulty**: Medium. Requires UI updates and conditional firing logic.
-- **Risks**: UI complexity for a mobile screen.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Add a button to the Stall UI that toggles a boolean. Use that boolean in the fire loop."
+- **Asset Requirement**: Two sprite variants (or just a tint).
+- **Difficulty**: Medium.
+- **Risks**: UI bloat.
 
 ### Popiah Wrap
 - **Concept**: Traps an enemy in a "wrap" for 3 seconds, stopping them and preventing them from being hit by other towers.
-- **Implementation**: A freeze effect that also sets an `isInvulnerable` flag on the enemy.
-- **Difficulty**: Medium. Needs to update `handleProjectiles` to skip invulnerable targets.
-- **Risks**: Can be used to "troll" the game by saving an enemy from a killing blow.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Apply a freeze but also set `isTargetable = false` for the duration."
+- **Asset Requirement**: Wrap overlay for the enemy.
+- **Difficulty**: Medium.
+- **Risks**: Can prevent players from killing a dangerous enemy.
 
 ### Char Kway Teow Char
 - **Concept**: Adds a "burn" effect that deals damage over time (DOT).
-- **Implementation**: Add a `dotDuration` to `Enemy` and a loop in `updateGame` to subtract HP.
-- **Difficulty**: Medium. Requires persistent state tracking on enemies.
-- **Risks**: Calculating DOT for 100+ enemies every tick might lag.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Add a list of active DOTs to the Enemy model. Tick them in the ViewModel."
+- **Asset Requirement**: Fire/smoke particles.
+- **Difficulty**: Medium. Requires a list of active effects.
+- **Risks**: DOT calculations for many enemies.
 
 ### Hainanese Chicken Rice (Elite)
 - **Concept**: A more expensive version of the base stall that spawns a "Waiter" unit to block the path.
-- **Implementation**: Stalls that can spawn temporary `TileType` changes or "blocker" entities.
-- **Difficulty**: Hard. Requires pathfinding to be recalculated frequently.
-- **Risks**: Blocking the path completely would break the AI.
+- **Vibe Coding Suitability**: Low. Spawning blockers on the path is dangerous for AI.
+- **Vibe Implementation**: "Spawn a temporary Pillar on the floor tile when a special ability is used."
+- **Asset Requirement**: Waiter sprite.
+- **Difficulty**: Hard.
+- **Risks**: Blocking the path completely breaks the game.
 
 ### Durian King
 - **Concept**: Massive AOE that also leaves a "stink" cloud (Gas Cloud) that lingers.
-- **Implementation**: Combine `DURIAN` damage with a long-lasting `VisualEffectType.GAS_CLOUD` that deals tick damage.
-- **Difficulty**: Medium. Uses existing systems but needs a "damage in cloud" check.
-- **Risks**: Overlapping gas clouds could be visually overwhelming.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "After the Durian projectile hits, spawn a long-lived VisualEffect that also applies damage."
+- **Asset Requirement**: Large green cloud.
+- **Difficulty**: Medium.
+- **Risks**: Visual clutter.
 
 ### Ice Kachang Brain Freeze
 - **Concept**: Shards of ice that shatter on impact, freezing the target and chilling nearby enemies (slowing them).
-- **Implementation**: `Projectile` hits a target, applies freeze, and then checks `aoeRadius` for a slow effect.
-- **Difficulty**: Medium. Nested status effects.
-- **Risks**: Chain-freezing enemies indefinitely.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "In the hit logic, apply freeze to the target and a slow debuff to all enemies in range 1.0."
+- **Asset Requirement**: Shattering ice effect.
+- **Difficulty**: Medium.
+- **Risks**: Overlapping CC (Crowd Control) is hard to balance.
 
 ### Putu Piring Pulse
 - **Concept**: Releases a radial pulse of steam every 5 seconds, pushing enemies back slightly.
-- **Implementation**: A stall with a very slow `fireRateMs` that modifies the `position` of enemies in a radius.
-- **Difficulty**: Hard. Modifying coordinates directly can mess up pathfinding and A* logic.
-- **Risks**: Enemies being pushed into walls or outside the grid.
+- **Vibe Coding Suitability**: Low. Direct position manipulation messes with pathing.
+- **Vibe Implementation**: "Every 5 seconds, iterate through enemies in range and move their PreciseAxialCoordinate away from the center."
+- **Asset Requirement**: Steam pulse effect.
+- **Difficulty**: Hard.
+- **Risks**: Pushing enemies into walls or off-grid.
 
 ### Murtabak Shield
 - **Concept**: A stall that can be placed on the path to block enemies, but has its own HP and can be "eaten" (destroyed).
-- **Implementation**: Allow stalls to be placed on `FLOOR` tiles that are part of the path, and give enemies an "attack" state.
-- **Difficulty**: Hard. Major change to how enemies and stalls interact.
-- **Risks**: Changes the game from TD to a hybrid lane-defense game.
+- **Vibe Coding Suitability**: Low. Requires major changes to enemy AI (adding an attack state).
+- **Vibe Implementation**: "Allow stalls on path. If enemy hits stall, stop enemy and reduce stall health."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Hard.
+- **Risks**: Complete genre shift from TD to Lane Defense.
 
 ### Teh C Special
 - **Concept**: Three layers of effects: First hit slows, second hit burns, third hit deals massive damage.
-- **Implementation**: Track "HitCount" on enemies from specific stall IDs.
-- **Difficulty**: Medium. Requires state tracking on the enemy for specific stall interactions.
-- **Risks**: Hard to communicate the mechanic to the player visually.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Add a `Map<String, Int>` to the enemy to track hits from specific towers."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Medium.
+- **Risks**: Hard to communicate "hit count" to player.
 
 ---
 
@@ -139,123 +181,166 @@ Each idea includes:
 
 ### Hungry Ghost
 - **Concept**: Transparent and invisible to most stalls unless they are within a "light" stall's range.
-- **Implementation**: Add `isInvisible` to `Enemy`. Stalls skip them unless a "Detector" stall is nearby.
-- **Difficulty**: Medium. Modification to the targeting loop.
-- **Risks**: If the player doesn't build a detector, they lose instantly.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Add `isVisible` flag. Stalls skip if false. A 'Lantern' stall sets it to true in range."
+- **Asset Requirement**: Semi-transparent sprite.
+- **Difficulty**: Medium.
+- **Risks**: Frustrating if player lacks detectors.
 
 ### Merlion Boss
 - **Concept**: A giant boss with high HP that periodically sprays water, clearing all `puddles` in an area.
-- **Implementation**: A boss-tier enemy with a `lastActionTime` that removes `StickyPuddle` objects from the state.
-- **Difficulty**: Medium. Interaction between enemies and transient objects.
-- **Risks**: Makes `TEH_TARIK` useless against the most important enemy.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Every 3 seconds, the Merlion calls `gameState.puddles.clear()` for nearby objects."
+- **Asset Requirement**: Large Merlion sprite.
+- **Difficulty**: Medium.
+- **Risks**: Makes Teh Tarik completely useless.
 
 ### Office Lady (OL)
 - **Concept**: Moves fast and carries a "First Aid" kit (bubble tea), healing nearby customers.
-- **Implementation**: In `updateGame`, OL enemies check for nearby `Enemy` objects and increment their `health`.
-- **Difficulty**: Medium. Requires a proximity check for every OL enemy.
-- **Risks**: A pack of OLs could become an immortal death ball.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Every tick, find enemies within 1.0 distance and add 5 HP."
+- **Asset Requirement**: New sprite.
+- **Difficulty**: Medium.
+- **Risks**: Healing "death balls" that never die.
 
 ### Food Critic
 - **Concept**: Very slow, but if they reach the goal, you lose 5 health (tables) instead of 1.
-- **Implementation**: Add a `healthPenalty` property to the `EnemyType`.
-- **Difficulty**: Easy. Simple change in the `handleEnemyMovement` goal logic.
-- **Risks**: High frustration if one slips through due to a random freeze.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Add `healthPenalty` to Enemy. If reached goal, `lives -= enemy.healthPenalty`."
+- **Asset Requirement**: Grumpy critic sprite.
+- **Difficulty**: Easy.
+- **Risks**: Sudden death from one leak.
 
 ### Secondary School Kids
 - **Concept**: Move in a tight "canteen" pack. When one is hit, they all gain a temporary speed boost.
-- **Implementation**: Grouped spawning logic and a "rage" state triggered by damage.
-- **Difficulty**: Medium. Needs to track "group" IDs.
-- **Risks**: Sudden speed bursts can feel unfair.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "On damage, send a broadcast to all enemies with the same 'GroupID' to increase speed."
+- **Asset Requirement**: Small student sprites.
+- **Difficulty**: Medium.
+- **Risks**: Chain reactions make the whole pack move at light speed.
 
 ### Uncle with Newspaper
 - **Concept**: Stops moving for 2 seconds every few steps to "read the news," blocking other customers behind him.
-- **Implementation**: Already similar to `TOURIST` logic but with a "blocker" collision box.
-- **Difficulty**: Medium. Needs enemy-on-enemy collision which currently doesn't exist.
-- **Risks**: Massive traffic jams and performance drops.
+- **Animation Details**: Needs a walking sprite with a newspaper tucked under the arm, and a stationary sprite where he is holding the paper open in front of his face.
+- **Gameplay Balance**: To prevent unfair deadlocks, the Uncle has a "clumsy" flag—if he blocks 3+ enemies for more than 4 seconds, he gets "shoved," instantly ending his reading session and moving at 1.5x speed for a short burst.
+- **Vibe Coding Suitability**: Medium. Extension of Tourist logic.
+- **Vibe Implementation**: "Make a variant of Tourist. When stopped, play the 'Reading' animation. Add a 'Shove' counter to prevent infinite blocking."
+- **Asset Requirement**: Walking vs Reading sprites.
+- **Difficulty**: Medium. Requires coordination between movement and animation state.
+- **Risks**: Traffic jams can cause performance drops if many path-recalculations are triggered.
 
 ### Safe Entry Ambassador
 - **Concept**: A "mid-boss" that slows down all other enemies behind him for "checks," effectively grouping them up for AOE.
-- **Implementation**: An enemy that provides a speed debuff to other enemies in a trailing radius.
-- **Difficulty**: Medium. Reverse-buff logic.
-- **Risks**: Actually helps the player by grouping enemies for Durian/Satay.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Apply a trailing slow aura that only affects other enemies."
+- **Asset Requirement**: High-vis vest sprite.
+- **Difficulty**: Medium.
+- **Risks**: Unintentionally helping the player by grouping enemies for Durian/Satay.
 
 ### PMD Rider
 - **Concept**: Extremely fast and immune to puddles, but takes extra damage from "cooling" stalls (Ice Kachang).
-- **Implementation**: Flag `isPuddleImmune` and add a damage multiplier in `handleProjectiles`.
-- **Difficulty**: Easy. Extension of existing status/modifier logic.
-- **Risks**: Too fast for single-target stalls to hit.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Check for `isPuddleImmune` in movement. Add damage multiplier for Ice Kachang in hit logic."
+- **Asset Requirement**: Electric scooter sprite.
+- **Difficulty**: Easy.
+- **Risks**: Too fast for slow-firing towers.
 
 ### Otter Family
 - **Concept**: Small, very fast enemies that move in a zig-zag pattern instead of following the path perfectly.
-- **Implementation**: Add a `sineWave` offset to the `toScreenPrecise` calculation or the actual coordinate logic.
-- **Difficulty**: Medium. Makes targeting much harder.
-- **Risks**: Projectiles might miss constantly.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Apply a `sin(time)` offset to the rendered X/Y position relative to the grid path."
+- **Asset Requirement**: Otter sprites.
+- **Difficulty**: Medium. Targeting logic might miss if it doesn't account for the offset.
+- **Risks**: Hard to click.
 
 ### Durian Lover
 - **Concept**: An enemy that is healed by Durian stall projectiles.
-- **Implementation**: Check `sourceStallType` in `handleProjectiles` and add HP instead of subtracting.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "If hit by DURIAN, `hp += damage`."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Players might not realize why their strongest tower is helping the enemy.
+- **Risks**: Counter-intuitive for players.
 
 ### The "Chope" Auntie
 - **Concept**: Leaves a "Tissue Packet" on a random stall, disabling it for 5 seconds.
-- **Implementation**: Enemy-to-Stall interaction. Auntie targets the nearest `AxialCoordinate` with a stall.
-- **Difficulty**: Hard. Requires enemies to have "attack" AI targeting stalls.
-- **Risks**: Disabling the only defense can be frustrating.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "If Auntie is near a stall, add a `DisabledEffect` to the stall's state."
+- **Asset Requirement**: Tissue packet overlay.
+- **Difficulty**: Hard. Enemies usually don't target towers.
+- **Risks**: Disabling the only defense.
 
 ### Giant Tropical Cockroach
 - **Concept**: When "killed," it flies! Becomes a fast aerial unit that ignores pathfinding (moves straight to goal).
-- **Implementation**: On death, spawn a new enemy type with `path = listOf(currentPos, goalPos)`.
-- **Difficulty**: Medium. Transitions between path-following and direct-flying.
-- **Risks**: Aerial units need new visual indicators so players know they can't be slowed by puddles.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "On death, spawn a 'Flying Roach' at current pos with a simple direct vector to the goal."
+- **Asset Requirement**: Flying variant sprite.
+- **Difficulty**: Medium.
+- **Risks**: Aerial units need clear visual feedback that they are flying.
 
 ### GrabFood Cyclist
 - **Concept**: High speed, but crashes (stops) for 3 seconds if it takes more than 50% damage in one hit.
-- **Implementation**: Track `damageTakenInTick` and apply a stop duration.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "In damage logic, if `damage > maxHp/2`, apply 3s freeze."
+- **Asset Requirement**: Crash animation/sprite.
 - **Difficulty**: Easy.
-- **Risks**: Encourages only using high-damage towers like Durian.
+- **Risks**: Encourages only high-alpha towers.
 
 ### Kiasu Parent
 - **Concept**: Drags a "Student" enemy. If the parent dies, the student runs at 3x speed.
-- **Implementation**: "Carrier" enemy logic.
-- **Difficulty**: Medium. Spawning new entities on death with velocity inheritance.
-- **Risks**: Student might be too small to see/click.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Spawning logic on death."
+- **Asset Requirement**: Two sprites.
+- **Difficulty**: Medium.
+- **Risks**: Spawning enemies in the middle of a path can be glitchy.
 
 ### Tour Group
 - **Concept**: 10+ Tourists following a "Flag Bearer." If the bearer dies, the tourists scatter (random paths).
-- **Implementation**: Complex pathfinding. Tourists follow a leader's coordinate with an offset.
-- **Difficulty**: Hard. Group AI and dynamic repathing.
-- **Risks**: High CPU usage for 20+ tourists repathing simultaneously.
+- **Vibe Coding Suitability**: Low. Requires group behavior logic.
+- **Vibe Implementation**: "Leader/Follower pattern in movement."
+- **Asset Requirement**: Multiple tourist sprites.
+- **Difficulty**: Hard.
+- **Risks**: CPU spikes from multiple repaths.
 
 ### National Serviceman (Full Battle Order)
-- **Concept**: High armor. Reduces all incoming damage by 5.
-- **Implementation**: `damage = Math.max(1, incomingDamage - armor)`.
-- **Difficulty**: Easy.
-- **Risks**: Fast-firing, low-damage stalls (Kaya Toast) become useless.
+- **Concept**: High armor. Reduces all incoming damage by a flat amount (e.g., -5 per hit).
+- **Design Decisions**: Flat reduction is chosen over percentage to create a hard counter for fast-firing, low-damage towers (like Kaya Toast). This forces the player to diversify into high-damage "tank busters" (like Durian).
+- **Vibe Coding Suitability**: High. Simple math modification.
+- **Vibe Implementation**: "Modify the damage calculation: `actualDamage = Math.max(1, damage - 5)`."
+- **Asset Requirement**: Camouflage uniform sprite.
+- **Difficulty**: Easy. Simple arithmetic change.
+- **Risks**: If the flat reduction is too high, early-game towers become literally useless.
 
 ### Influencer
 - **Concept**: Stops to take a "selfie," stunning all stalls in a small radius with the "flash."
-- **Implementation**: Stall `isStunned` state.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Periodic radial stun effect."
+- **Asset Requirement**: Selfie stick/Flash effect.
 - **Difficulty**: Medium.
-- **Risks**: Visual flash effect might be annoying to players.
+- **Risks**: Annoying visual flash.
 
 ### Stray Cat
 - **Concept**: Not an enemy, but walks on the path. If a stall hits it, you lose gold (fine for animal cruelty!).
-- **Implementation**: A "neutral" entity in the `enemies` list with a negative reward.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Neutral target. Check target ID in hit logic; if cat, `gold -= 100`."
+- **Asset Requirement**: Cat sprite.
 - **Difficulty**: Easy.
-- **Risks**: Players might get angry at the game for "tricking" them.
+- **Risks**: Players hate accidental penalties.
 
 ### Canteen Cleaner Uncle
 - **Concept**: Moves around the map (not the path) and "collects" dropped gold or power-ups.
-- **Implementation**: Separate AI loop for non-path entities.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "New entity type that wanders to nearest gold drop."
+- **Asset Requirement**: Cleaning cart sprite.
 - **Difficulty**: Medium.
-- **Risks**: Adds more visual noise.
+- **Risks**: More visual noise.
 
 ### Bird (Mynah)
 - **Concept**: Flies over stalls and occasionally "steals" an upgrade level.
-- **Implementation**: Aerial unit that targets stalls.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Aerial unit that interacts with `Stall.upgradeCount` on collision."
+- **Asset Requirement**: Bird sprite.
 - **Difficulty**: Medium.
-- **Risks**: Extremely high frustration factor.
+- **Risks**: High frustration; losing hard-earned upgrades feels bad.
 
 ---
 
@@ -263,93 +348,123 @@ Each idea includes:
 
 ### Sudden Rainstorm
 - **Concept**: Periodically, the whole map slows down, and "puddles" form randomly on the floor.
-- **Implementation**: A global `speedMultiplier` in `MainViewModel` and random `StickyPuddle` spawning.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Global speed multiplier tied to a 'isRaining' flag."
+- **Asset Requirement**: Rain particle overlay.
 - **Difficulty**: Easy.
-- **Risks**: Can make the game feel sluggish.
+- **Risks**: Makes game feel sluggish.
 
 ### Lunch Hour Rush
 - **Concept**: A "Fast Forward" mode that is forced upon the player for 30 seconds, with 2x spawn rate.
-- **Implementation**: Modify `tickRate` and `spawnTimer`.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Temporary tick rate increase."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Players might lose control of the game state.
+- **Risks**: Loss of control.
 
 ### Table Cleaning Robot Obstacle
 - **Concept**: A robot that moves along the paths, pushing enemies back if it hits them.
-- **Implementation**: A "friendly" enemy that follows the path in reverse.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Friendly 'enemy' with a reverse path."
+- **Asset Requirement**: Robot sprite.
 - **Difficulty**: Medium.
-- **Risks**: Can create "infinite" stalls where enemies never progress.
+- **Risks**: Infinite loops.
 
 ### Tissue Packet "Chope" Zones
 - **Concept**: Certain hexes are blocked by tissue packets at the start of the wave. You can't place stalls there.
-- **Implementation**: Add a `isReserved` flag to `HexTile`.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Randomly mark some FLOOR tiles as `isBlocked` during map gen."
+- **Asset Requirement**: Tissue packet sprite.
 - **Difficulty**: Easy.
-- **Risks**: Limits player freedom on already tight maps.
+- **Risks**: Frustrating map layouts.
 
 ### Ceiling Fan Blowback
 - **Concept**: Large fans on the ceiling that affect projectile trajectory (wind effect).
-- **Implementation**: Add a `windVector` to `Projectile` movement logic.
-- **Difficulty**: Medium. Physics-based projectiles.
-- **Risks**: Satay or Chicken Rice shots might miss targets they should have hit.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Apply a constant vector to projectiles every frame."
+- **Asset Requirement**: Ceiling fan sprite (top layer).
+- **Difficulty**: Medium.
+- **Risks**: Projectiles missing when they shouldn't.
 
 ### Wet Floor Sign
 - **Concept**: A placeable item (not a stall) that creates a permanent slow zone but can be destroyed by enemies.
-- **Implementation**: New entity type: `EnvironmentObject`.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "New object type with HP and a slow aura."
+- **Asset Requirement**: Wet floor sign sprite.
 - **Difficulty**: Medium.
-- **Risks**: Pathfinding needs to treat them as obstacles or ignore them.
+- **Risks**: Pathing complexity.
 
 ### Day/Night Cycle (Supper Club)
 - **Concept**: Night mode reduces stall range but increases gold earned (supper prices!).
-- **Implementation**: Visual overlay and global stat modifiers.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Visual overlay + global range modifier."
+- **Asset Requirement**: Night tint shader/filter.
 - **Difficulty**: Easy.
-- **Risks**: Harder to see the sprites on dark backgrounds.
+- **Risks**: Hard to see.
 
 ### Multi-Level Hawker Center
 - **Concept**: Teleporters or stairs that move enemies between two different grid maps.
-- **Implementation**: `HexTile` type `STAIRS` that links to another `AxialCoordinate`.
-- **Difficulty**: Hard. Pathfinding across disconnected graphs.
-- **Risks**: Confusing for the player to track enemies across screens.
+- **Vibe Coding Suitability**: Low. Disconnected paths are hard for A*.
+- **Vibe Implementation**: "Link two hexes so distance is treated as 1."
+- **Asset Requirement**: Stairs sprite.
+- **Difficulty**: Hard.
+- **Risks**: AI pathfinding breakages.
 
 ### Tray Return Station
 - **Concept**: If enemies pass near this, they speed up (done eating!).
-- **Implementation**: A static map feature that applies a speed buff.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Tile-based speed buff."
+- **Asset Requirement**: Tray return rack sprite.
 - **Difficulty**: Easy.
-- **Risks**: Encourages building away from the goal, which is counter-intuitive.
+- **Risks**: Incentive to build away from goal.
 
 ### The "Drain" Hazard
 - **Concept**: Holes in the floor. If an enemy is pushed into one (by a Putu Piring pulse), they die instantly.
-- **Implementation**: `TileType.DRAIN` with a collision check.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "TileType.DRAIN. In movement, if on Drain, `isDead = true`."
+- **Asset Requirement**: Drain tile sprite.
 - **Difficulty**: Easy.
-- **Risks**: Makes "push" mechanics too overpowered.
+- **Risks**: OP with push mechanics.
 
 ### Dynamic Construction
 - **Concept**: Every 5 waves, a "Pillar" is built or removed, changing the path.
-- **Implementation**: Modify `hexes` map and call `recalculateEnemyPaths`.
-- **Difficulty**: Medium. Already partially implemented in stall placement logic.
-- **Risks**: Could accidentally block the path entirely if not careful.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Update map state and trigger re-pathing for all enemies."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Medium. Already partially implemented.
+- **Risks**: Blocking the goal.
 
 ### Festive Decorations (CNY/Deepavali/Hari Raya)
 - **Concept**: Seasonal map skins that change floor tiles and add decorative pillars.
-- **Implementation**: Asset swapping based on system date.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Asset swap based on system clock."
+- **Asset Requirement**: Multiple tile sets.
 - **Difficulty**: Easy.
-- **Risks**: Bloats the APK size with extra assets.
+- **Risks**: App size.
 
 ### Air-Con Zone vs Non Air-Con
 - **Concept**: Air-con tiles increase stall fire rate (workers are cool!) but stalls cost 2x more to place.
-- **Implementation**: `TileType.AIR_CON` with cost and stat modifiers.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Fire rate multiplier on specific tiles."
+- **Asset Requirement**: Frosty tile tint.
 - **Difficulty**: Easy.
-- **Risks**: Players will only build in the "optimal" zone.
+- **Risks**: Optimal building zones.
 
 ### Moving Walkway (Like Changi, but Hawker)
 - **Concept**: Specific tiles that move enemies in a fixed direction regardless of their path.
-- **Implementation**: Add a `conveyorVector` to the `Enemy` movement calculation.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Add a force vector to enemy position on specific hexes."
+- **Asset Requirement**: Conveyor tile sprite.
 - **Difficulty**: Medium.
-- **Risks**: Can break A* logic if the conveyor moves against the path.
+- **Risks**: Fighting the A* pathing.
 
 ### Bird Droppings
 - **Concept**: Randomly disables a tile for 10 seconds.
-- **Implementation**: Visual effect + `isDisabled` flag on a tile.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Visual effect + temporary flag."
+- **Asset Requirement**: Dropping sprite.
 - **Difficulty**: Easy.
-- **Risks**: Purely annoying RNG.
+- **Risks**: Pure annoyance.
 
 ---
 
@@ -357,63 +472,83 @@ Each idea includes:
 
 ### 8-Bit "Chiptune" Remix
 - **Concept**: A retro sound mode that changes the music to a lo-fi version of Singaporean folk songs.
-- **Implementation**: Add an audio engine and toggle in options.
-- **Difficulty**: Easy (if assets exist).
-- **Risks**: Audio syncing issues on Android.
+- **Vibe Coding Suitability**: High (if assets exist).
+- **Vibe Implementation**: "Toggle audio track."
+- **Asset Requirement**: New music.
+- **Difficulty**: Easy.
+- **Risks**: Syncing.
 
 ### Particle Effects for "Wok Hei"
 - **Concept**: Adding smoke and spark particles when a stall fires to simulate high-heat cooking.
-- **Implementation**: A simple particle system in the `Canvas` draw loop.
-- **Difficulty**: Medium. Performance is the main concern.
-- **Risks**: Slowing down the frame rate on mid-range devices.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Spawn particles at stall coordinate on fire."
+- **Asset Requirement**: Smoke particles.
+- **Difficulty**: Medium.
+- **Risks**: Performance.
 
 ### Dynamic Background Chatter
 - **Concept**: Ambient sound that gets louder and more crowded as the wave size increases.
-- **Implementation**: Layered audio files with volume tied to `enemies.size`.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Adjust audio volume based on `enemies.size`."
+- **Asset Requirement**: Crowd audio loops.
 - **Difficulty**: Easy.
-- **Risks**: Can become "noise" rather than "ambiance."
+- **Risks**: Noise fatigue.
 
 ### Stall "Level Up" Animations
 - **Concept**: Stalls physically grow or get more "bling" (gold plates) as they are upgraded.
-- **Implementation**: Multiple sprite variants for each `StallType`.
-- **Difficulty**: Easy (Art-heavy).
-- **Risks**: Needs many more assets.
+- **Vibe Coding Suitability**: High (Art-heavy).
+- **Vibe Implementation**: "Select sprite index based on `upgradeCount`."
+- **Asset Requirement**: Multiple stall sprites.
+- **Difficulty**: Easy.
+- **Risks**: Asset bloat.
 
 ### Screen Shake on Boss Spawn
 - **Concept**: The whole board shakes when a Merlion or large enemy appears.
-- **Implementation**: Offset the `Canvas` draw calls by a random small amount for a few frames.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Add a temporary random offset to the Canvas `drawTransform`."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Motion sickness for some players.
+- **Risks**: Motion sickness.
 
 ### Customer Emotes
 - **Concept**: Enemies show a "sweat" drop when low health or a "heart" when healed.
-- **Implementation**: Small overlay icons above the enemy sprite.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Render small icons at `enemy.position + offset`."
+- **Asset Requirement**: Icon sprites.
 - **Difficulty**: Easy.
-- **Risks**: Visual clutter.
+- **Risks**: Clutter.
 
 ### Damage Numbers (Pop-ups)
 - **Concept**: Numbers flying off enemies when they get hit.
-- **Implementation**: A list of `TransientText` objects updated in the game loop.
-- **Difficulty**: Medium. Needs a separate animation system.
-- **Risks**: Can obscure the actual gameplay.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Manage a list of short-lived text entities in the UI."
+- **Asset Requirement**: Font/Text rendering.
+- **Difficulty**: Medium.
+- **Risks**: Overlapping text.
 
 ### Food "Glow"
 - **Concept**: Projectiles glow based on their element (Red for spicy, Blue for cold).
-- **Implementation**: `Paint` with `ShadowLayer` or `BlurMaskFilter` in the `Canvas`.
-- **Difficulty**: Medium. `Canvas` performance.
-- **Risks**: Looks "cheap" if not done with good art.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Apply a `BlurMaskFilter` to the projectile paint."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Medium.
+- **Risks**: GPU lag.
 
 ### Custom UI Themes
 - **Concept**: Change the UI from "Modern App" to "Old School Chalkboard" style.
-- **Implementation**: Jetpack Compose theme switching.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Switch Compose Material colors and fonts."
+- **Asset Requirement**: Full UI reskin.
 - **Difficulty**: Medium.
-- **Risks**: Maintaining two sets of UI code.
+- **Risks**: Maintenance.
 
 ### Hand-Drawn Sprite Mode
 - **Concept**: Replace pixel/clean art with messy, hand-drawn "napkin" sketches.
-- **Implementation**: Asset swap.
+- **Vibe Coding Suitability**: High (Art-heavy).
+- **Vibe Implementation**: "Asset swap."
+- **Asset Requirement**: Full sprite set reskin.
 - **Difficulty**: Easy.
-- **Risks**: Style might not fit the "Rush" vibe.
+- **Risks**: Style clash.
 
 ---
 
@@ -421,93 +556,127 @@ Each idea includes:
 
 ### Michelin Guide Progression
 - **Concept**: Unlock new stalls and upgrades by earning "stars" from a separate objective system.
-- **Implementation**: A `StarRepository` and a "Missions" UI.
-- **Difficulty**: Medium.
-- **Risks**: Adds "grind" to the game.
+- **Purpose**: This system achieves long-term retention by giving players goals beyond just "survival." It is useful for gated complexity, ensuring new players aren't overwhelmed by 20+ stall types at once.
+- **Vibe Coding Suitability**: Medium. Requires persistent storage and mission checks.
+- **Vibe Implementation**: "Add a MissionRepository. Check for mission completion (e.g., 'Kill 50 Bosses') after each wave."
+- **Asset Requirement**: Star/Badge icons.
+- **Difficulty**: Medium. Requires a new UI screen and save data.
+- **Risks**: Making the game too "grindy."
 
 ### Daily Special Stall
 - **Concept**: Every day, one random stall type has +50% damage.
-- **Implementation**: Seeded random based on `LocalDate`.
+- **Definition of "Day"**: Defined as the 24-hour period (UTC) to ensure consistency across all players, or local device time for simplicity in "vibe" mode.
+- **Balance Details**: To ensure fairness, the "Special" buff is capped at 50% damage and does not apply to AOE radius or CC effects. This prevents stalls like Durian from becoming "map-clearers" with one hit.
+- **Design/Impl Questions**: Should we use a server? No, seeded random based on `currentDate.toEpochDay()` allows offline play with the same "Daily" for everyone.
+- **Vibe Coding Suitability**: High. Seeded random logic is easy to prompt.
+- **Vibe Implementation**: "In MainViewModel, set `dailyBonusStall = allStalls[Random(dateSeed).nextInt()]`."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: None.
+- **Risks**: A "Durian Day" might make the leaderboard trivial for that day.
 
 ### Hawker Center Customization
 - **Concept**: Spend gold earned across games to buy permanent cosmetic upgrades for your center.
-- **Implementation**: Meta-currency system.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Persistent meta-currency and a shop UI."
+- **Asset Requirement**: Cosmetic assets.
 - **Difficulty**: Medium.
-- **Risks**: Needs a "Shop" UI.
+- **Risks**: Inflation.
 
 ### Skill Tree (The "Recipe Book")
 - **Concept**: Permanent upgrades like "Cheaper Satay" or "Faster Teh Tarik."
-- **Implementation**: A persistent `PlayerStats` model.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Global multiplier object applied to all stall stats."
+- **Asset Requirement**: Tree UI.
 - **Difficulty**: Medium.
-- **Risks**: Power creep makes early levels too easy.
+- **Risks**: Power creep.
 
 ### Global Leaderboards
 - **Concept**: Compare your highest wave with other players in Singapore.
-- **Implementation**: Firebase or a simple custom backend.
-- **Difficulty**: Hard. Needs server-side validation to prevent cheating.
-- **Risks**: Cheaters ruining the fun.
+- **Vibe Coding Suitability**: Low. Requires backend integration.
+- **Vibe Implementation**: "POST score to Firebase on GameOver."
+- **Asset Requirement**: Backend setup.
+- **Difficulty**: Hard.
+- **Risks**: Cheating.
 
 ### Achievements (The "Foodie Badges")
 - **Concept**: "Win a wave using only Teh Tarik" or "Kill 1000 Salarymen."
-- **Implementation**: Achievement tracker in `MainViewModel`.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Check conditions in the ViewModel and show a toast."
+- **Asset Requirement**: Badge icons.
 - **Difficulty**: Easy.
 - **Risks**: None.
 
 ### GST Hike Event
 - **Concept**: Every 20 waves, all costs increase by 9%, but rewards also increase.
-- **Implementation**: A `globalInflation` multiplier.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Apply `1.09^waves/20` to all cost calculations."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Can make the math "ugly" (non-integer costs).
+- **Risks**: Ugly decimals.
 
 ### Bulk Orders
 - **Concept**: Bonus gold if you kill 10 enemies within 2 seconds.
-- **Implementation**: A "Combo" timer.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Combo counter that resets after 2s."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: None.
+- **Risks**: Snowballing.
 
 ### Investor Funding
 - **Concept**: Watch an ad (or just a button click in vibe mode) to get a 500 gold injection.
-- **Implementation**: Simple button + state update.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Button that adds 500 to gold."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Breaks game balance.
+- **Risks**: Balance.
 
 ### Seasonal Battle Pass (The "Seasoning Pass")
 - **Concept**: Earn XP to unlock Singapore-themed skins (e.g., National Day skin).
-- **Implementation**: XP system and reward track.
-- **Difficulty**: Hard. Requires a lot of content.
-- **Risks**: Players hate battle passes.
+- **Vibe Coding Suitability**: Low. Content heavy.
+- **Vibe Implementation**: "XP track in save data."
+- **Asset Requirement**: Massive amounts of content.
+- **Difficulty**: Hard.
+- **Risks**: Player backlash.
 
 ### Recycling Gold
 - **Concept**: Selling a stall gives 100% refund if it hasn't fired yet.
-- **Implementation**: Track `hasFired` on `Stall`.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Flag on Stall, checked in sellStall()."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Allows "accidental placement" fixes.
+- **Risks**: Placement exploits.
 
 ### Loan Shark (Oolong)
 - **Concept**: Borrow gold now, but pay back 2x later or your stalls get "vandalized" (disabled).
-- **Implementation**: A "Debt" state that triggers a negative event.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Loan button + debt counter + periodic vandal event."
+- **Asset Requirement**: Graffiti overlay for stalls.
 - **Difficulty**: Medium.
-- **Risks**: Might be too dark for a food game.
+- **Risks**: Dark tone.
 
 ### Franchise Mode
 - **Concept**: Manage 3 hawker centers at once, jumping between maps.
-- **Implementation**: Multiple `GameState` objects in memory.
-- **Difficulty**: Hard. UI/UX nightmare.
-- **Risks**: Too complex for a casual game.
+- **Vibe Coding Suitability**: Low. Major architecture shift.
+- **Vibe Implementation**: "Array of GameStates."
+- **Asset Requirement**: Multi-map UI.
+- **Difficulty**: Hard.
+- **Risks**: Confusion.
 
 ### Halal Certification
 - **Concept**: Buffs all stalls but removes the (theoretical) "Pork" stalls.
-- **Implementation**: Modifiers based on "Cert" status.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Stat modifier based on boolean flag."
+- **Asset Requirement**: Logo icon.
 - **Difficulty**: Easy.
-- **Risks**: Needs to be handled with cultural sensitivity.
+- **Risks**: Sensitivity.
 
 ### Food Waste Penalty
 - **Concept**: If an enemy reaches the goal with 90% health, you lose more "reputation" (extra life loss).
-- **Implementation**: Multiplier on health loss based on enemy remaining HP.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Scale lives loss based on `hp/maxHp`."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
-- **Risks**: Makes "leaking" enemies even more punishing.
+- **Risks**: High punishment.
 
 ---
 
@@ -515,63 +684,84 @@ Each idea includes:
 
 ### Entity Component System (ECS)
 - **Concept**: Refactor the game loop to use ECS for better performance and easier mixing of behaviors.
-- **Implementation**: Move logic from `MainViewModel` to dedicated `Systems` (MovementSystem, CombatSystem).
-- **Difficulty**: Hard. Complete rewrite of the core engine.
-- **Risks**: High chance of introducing regressions.
+- **Vibe Coding Suitability**: Low. LLMs struggle with massive architectural refactors across many files.
+- **Vibe Implementation**: "Define Component and System interfaces. Move movement to MovementSystem."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Hard.
+- **Risks**: Massive regressions.
 
 ### Modding Support via JSON
 - **Concept**: Allow new stalls and enemies to be defined in external JSON files.
-- **Implementation**: Use GSON to load data into the `availableStalls` and `enemyTiers` lists.
-- **Difficulty**: Medium. Moves hardcoded logic to data-driven.
-- **Risks**: Need to validate JSON to prevent crashes.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Use GSON to load assets from the `assets/` folder instead of hardcoding objects."
+- **Asset Requirement**: JSON files.
+- **Difficulty**: Medium.
+- **Risks**: Parsing errors.
 
 ### Multi-Threaded Collision Detection
 - **Concept**: Run projectile/enemy collision checks on a separate background thread.
-- **Implementation**: Use Kotlin Coroutines with a dedicated thread pool.
-- **Difficulty**: Hard. Synchronizing state between threads without `ConcurrentModificationException` is tough.
+- **Vibe Coding Suitability**: Low. Concurrency is hard to prompt safely.
+- **Vibe Implementation**: "Move the collision loop to `Dispatchers.Default`."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Hard.
 - **Risks**: Race conditions.
 
 ### Replay System
 - **Concept**: Record every action (stall placement, wave start) and allow the player to watch it back.
-- **Implementation**: Store a list of `GameAction` objects with timestamps.
-- **Difficulty**: Hard. Requires deterministic game logic.
-- **Risks**: "Desync" where the replay doesn't match what actually happened.
-
-### Asset Bundling / Hot Reload
-- **Concept**: Update sprites and balance numbers without a full APK reinstall.
-- **Implementation**: Download assets from a remote server on startup.
-- **Difficulty**: Medium.
-- **Risks**: Security and data usage.
+- **Vibe Coding Suitability**: Low. Requires perfect determinism.
+- **Vibe Implementation**: "Store list of (Time, Action) and play back on a fresh state."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Hard.
+- **Risks**: Replay desync.
 
 ### Level Editor
 - **Concept**: An in-game tool to create custom hawker center layouts.
-- **Implementation**: A new `AppScreen` where you can paint `TileType` on a grid.
-- **Difficulty**: Hard. Requires a lot of UI work.
-- **Risks**: Saving/Loading custom maps.
+- **Vibe Coding Suitability**: Low. Complex UI and state logic.
+- **Vibe Implementation**: "Tile-painting mode that saves to local storage."
+- **Asset Requirement**: Editor UI icons.
+- **Difficulty**: Hard.
+- **Risks**: Unwinnable maps.
 
 ### Haptic Feedback Engine
 - **Concept**: Advanced vibrations that feel like "sizzling" or "chopping."
-- **Implementation**: Use the Android `Vibrator` API with custom waveforms.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Custom `VibrationEffect` patterns for different stall types."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Medium.
-- **Risks**: Drains battery.
+- **Risks**: Battery drain.
 
 ### Unit Testing for Game Logic
 - **Concept**: Automated tests to ensure "Wave 10 is always winnable with 3 towers."
-- **Implementation**: Headless game loop simulation in JUnit.
+- **Vibe Coding Suitability**: Medium. LLMs are great at writing tests.
+- **Vibe Implementation**: "Create a headless SimulationViewModel and run 1000 trials."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Medium.
-- **Risks**: Hard to simulate "player skill."
+- **Risks**: Slow build times.
 
 ### Shader-Based Rendering
-- **Concept**: Move some visual effects (like puddles or heat haze) to AGSL (Android Graphics Shading Language).
-- **Implementation**: Custom `Modifier.drawWithCache` with shaders.
-- **Difficulty**: Hard. Requires high-end Android versions and GPU knowledge.
-- **Risks**: Incompatibility with older devices.
+- **Concept**: Move visual effects (like heat haze or puddles) to AGSL (Android Graphics Shading Language).
+- **Pixel 6A Compatibility**: This will work perfectly on a Pixel 6A. AGSL was introduced in Android 13, and the Tensor chip in the 6A handles fragment shaders very efficiently.
+- **Vibe Coding Suitability**: Low. Shaders are hard to write via text prompts without visual feedback.
+- **Vibe Implementation**: "Pass an AGSL string to `RuntimeShader` and apply it to a Modifier."
+- **Asset Requirement**: Code only.
+- **Difficulty**: Hard. Requires deep graphics knowledge.
+- **Risks**: Incompatibility with very old devices (pre-Android 13).
 
 ### Save-State Serialization
 - **Concept**: Allow "Undo" by keeping the last 3 game states in a stack.
-- **Implementation**: Deep-copy the `GameState` every 5 seconds.
-- **Difficulty**: Medium. Performance/Memory impact.
-- **Risks**: Memory leaks if the stack isn't managed.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Copy the GameState object into a circular buffer every action."
+- **Asset Requirement**: Undo button icon.
+- **Difficulty**: Medium.
+- **Risks**: Memory usage.
+
+### Multi-Language Support (Singlish vs English)
+- **Concept**: Toggle between standard English and full Singlish dialogue.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Localize strings and add a toggle in Settings."
+- **Asset Requirement**: String files.
+- **Difficulty**: Easy.
+- **Risks**: None.
 
 ---
 
@@ -579,60 +769,95 @@ Each idea includes:
 
 ### VR Hawker Mode
 - **Concept**: A 1st-person mini-game where you manually throw satay at customers.
-- **Implementation**: New 3D renderer or a very clever 2D perspective shift.
-- **Difficulty**: Hard. Genre shift.
-- **Risks**: Doesn't fit the rest of the app.
+- **Vibe Coding Suitability**: Low.
+- **Vibe Implementation**: "Use a 3D engine like SceneView."
+- **Asset Requirement**: 3D models.
+- **Difficulty**: Hard.
+- **Risks**: Genre clash.
 
 ### Crypto-Gold
 - **Concept**: The value of your gold changes every minute based on a "Market" (random or real-world BTC price).
-- **Implementation**: An external API call + price multiplier.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Fetch price from API and multiply all gold gains."
+- **Asset Requirement**: Market ticker UI.
 - **Difficulty**: Medium.
-- **Risks**: Frustrating if the "market" crashes when you need to buy a Durian stall.
+- **Risks**: Market crash soft-locks the game.
 
 ### Kaiju Merlion Attack
 - **Concept**: A 1-in-1000 chance that a giant Merlion stomps through the middle of the map, destroying everything.
-- **Implementation**: A "Disaster" event.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Random event trigger that calls `clearStalls()` in a center radius."
+- **Asset Requirement**: Giant Merlion foot sprite.
 - **Difficulty**: Medium.
-- **Risks**: Players might hate losing their progress to a random event.
+- **Risks**: Rage quitting.
 
 ### 1960s Street Hawker Mode
 - **Concept**: A "Black and White" mode where you play as an illegal street hawker running from the "Mata" (police).
-- **Implementation**: Visual filter + new enemy type (Police).
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Visual grayscale filter and re-skinning enemies."
+- **Asset Requirement**: Retro assets.
 - **Difficulty**: Easy.
 - **Risks**: None.
 
 ### Voice Command Controls
 - **Concept**: Shout "ONE TEH TARIK" to place a stall.
-- **Implementation**: Android Speech-to-Text API.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Use Android SpeechRecognizer."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Medium.
-- **Risks**: Accidental placements from background noise.
+- **Risks**: Mis-recognition.
 
 ### GPS-Based Buffs
 - **Concept**: If you are physically at a real-world Hawker Center, you get a 2x gold buff.
-- **Implementation**: Location services + a database of SG hawker centers.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Check GPS location against a list of coordinates."
+- **Asset Requirement**: Location access.
 - **Difficulty**: Medium.
 - **Risks**: Privacy concerns.
 
 ### Stall Romance Sim
 - **Concept**: Stalls that are placed next to each other for a long time "fall in love" and get a permanent buff.
-- **Implementation**: Track "ProximityTime" in the `Stall` model.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Increment a `bondLevel` on adjacent stalls every wave."
+- **Asset Requirement**: Heart icons.
 - **Difficulty**: Easy.
-- **Risks**: Weird tonal shift.
+- **Risks**: Weird vibe.
 
 ### Durian Bomb (The "Nuke")
 - **Concept**: A button that costs 5000 gold and instantly clears the entire screen with a massive green explosion.
-- **Implementation**: Global `enemies.clear()` + visual effect.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Button that kills all enemies in the list."
+- **Asset Requirement**: Explosion animation.
 - **Difficulty**: Easy.
-- **Risks**: Trivializes the game.
+- **Risks**: Game becomes too easy.
 
 ### Customer Conversation Logs
 - **Concept**: A small text box showing what the customers are saying ("The Laksa is too spicy!", "Where is my tissue?").
-- **Implementation**: Random string selection based on enemy state.
+- **Vibe Coding Suitability**: High.
+- **Vibe Implementation**: "Pick random string based on `enemy.type` and `enemy.healthPercent`."
+- **Asset Requirement**: Code only.
 - **Difficulty**: Easy.
 - **Risks**: Distracting.
 
 ### Ghost Map
 - **Concept**: You play on a map that is perfectly normal, but the path changes randomly because "Ghosts are moving the tables."
-- **Implementation**: Randomly swap `FLOOR` and `PILLAR` tiles.
+- **Vibe Coding Suitability**: Medium.
+- **Vibe Implementation**: "Randomly swap FLOOR and PILLAR tiles between waves."
+- **Asset Requirement**: Spooky tile set.
 - **Difficulty**: Medium.
-- **Risks**: Might create unsolvable maps.
+- **Risks**: Unwinnable states.
+
+---
+
+## Out of Scope
+
+The following ideas were considered but are designated as "Out of Scope" for the current version of the project:
+
+### Asset Bundling / Hot Reload
+- **Reasoning**: The current APK size is under 10MB, which is small enough for standard store updates. Furthermore, the internal API is highly unstable during the "vibe coding" phase. Attempting to hot-reload code or assets would likely lead to frequent crashes and massive technical debt without providing significant value to the player at this scale.
+
+### Real-Time Multiplayer
+- **Reasoning**: Synchronizing a physics-lite hexagonal grid in real-time requires a stable backend and sophisticated lag compensation (e.g., lockstep or rollback). This contradicts the "vibe coding" philosophy of rapid, high-level iteration and would require a total architectural overhaul.
+
+### 3D Perspective Shift (Full 3D)
+- **Reasoning**: The current engine is optimized for a 2.5D pseudo-3D perspective using Canvas sorting. Moving to full 3D would require switching to a different rendering engine (like Filament or Unity), making the current Compose-based UI and logic obsolete.
