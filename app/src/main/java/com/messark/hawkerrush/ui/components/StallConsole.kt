@@ -36,7 +36,7 @@ fun StallConsole(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = stall.name.uppercase(), color = Color.White, fontSize = 14.sp)
                 if (stall.upgrades.isEmpty()) {
                     Text(text = "No upgrades", color = Color.Gray, fontSize = 10.sp)
@@ -48,7 +48,10 @@ fun StallConsole(
                     Text(text = upgradeText, color = Color.Gray, fontSize = 10.sp)
                 }
             }
-            Text(text = "Target: ${stall.targetMode.name}", color = Color.Cyan, fontSize = 12.sp, modifier = Modifier.clickable { onCycleTarget() })
+            Column(horizontalAlignment = Alignment.End) {
+                Text(text = "Target: ${stall.targetMode.name}", color = Color.Cyan, fontSize = 12.sp, modifier = Modifier.clickable { onCycleTarget() })
+                Text(text = "Hits: ${stall.uniqueTargetIds.size} | Kills: ${stall.kills}", color = Color.Green, fontSize = 10.sp)
+            }
         }
 
         Row(
