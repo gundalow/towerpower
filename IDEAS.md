@@ -683,12 +683,19 @@ Each idea includes:
 ## Architectural
 
 ### Entity Component System (ECS)
-- **Concept**: Refactor the game loop to use ECS for better performance and easier mixing of behaviors.
-- **Vibe Coding Suitability**: Low. LLMs struggle with massive architectural refactors across many files.
-- **Vibe Implementation**: "Define Component and System interfaces. Move movement to MovementSystem."
+- **Concept**: Refactor the game loop to use an Entity Component System. In this model, "Entities" (Enemies, Stalls, Projectiles) are just IDs, "Components" are pure data (Position, Health, Velocity), and "Systems" are pure logic (MovementSystem, CollisionSystem).
+- **Problems Solved**:
+    - **Performance**: Loops through flat arrays of data are much faster than iterating through heavy objects like the current `Enemy` data class.
+    - **Complexity**: Currently, `MainViewModel` is a "God Object" containing all logic. ECS breaks this into tiny, independent systems.
+    - **Composition over Inheritance**: If you want a "Flying Enemy" that also "Heals," you just add `FlyingComponent` and `HealingComponent`. You don't need a complex class hierarchy.
+- **Vibe Coding Benefits**:
+    - **Modular Prompting**: You can ask Jules to "Add a new `StinkSystem` that handles Durian clouds" without Jules needing to touch or even read the `MovementSystem` code. This reduces the "Context Window" noise and prevents logic leaks.
+    - **Testable Units**: Each system is a pure function. Jules can write perfect unit tests for a `HealthSystem` without needing to mock the entire `GameState`.
+- **Vibe Coding Suitability**: Low (for the initial refactor), but High (for future extensions). Once the framework is in place, adding features becomes a simple "Add Component/System" prompt.
+- **Vibe Implementation**: "Jules, implement a basic ECS core with an `EntityManager`. Move the logic in `handleEnemyMovement` to a `MovementSystem` that iterates over `Position` and `Velocity` components."
 - **Asset Requirement**: Code only.
-- **Difficulty**: Hard.
-- **Risks**: Massive regressions.
+- **Difficulty**: Hard. Complete core rewrite.
+- **Risks**: Massive regressions in pathfinding and rendering during the transition.
 
 ### Modding Support via JSON
 - **Concept**: Allow new stalls and enemies to be defined in external JSON files.
@@ -739,13 +746,21 @@ Each idea includes:
 - **Risks**: Slow build times.
 
 ### Shader-Based Rendering
-- **Concept**: Move visual effects (like heat haze or puddles) to AGSL (Android Graphics Shading Language).
+- **Concept**: Offload heavy visual effects from the CPU (Canvas drawing) to the GPU using AGSL (Android Graphics Shading Language).
+- **Visual Goals**:
+    - **Teh Tarik Puddles**: Use a "Metaball" shader to make puddles merge together organically when they overlap, rather than just stacking circles.
+    - **Heat Haze**: Apply a displacement shader over Satay stalls to simulate the "Wok Hei" heat shimmer.
+    - **Dynamic Liquid**: Make the Laksa projectiles look like actual swaying liquid rather than static orange circles.
+- **Useful Assets**: Excellent for procedural effects like `StickyPuddle`, `VisualEffect` clouds, and "Glow" auras on elite stalls.
+- **Resources**:
+    - [Official AGSL Documentation](https://developer.android.com/develop/ui/views/graphics/agsl)
+    - [Shaders in Compose Guide](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers#runtime-shader)
 - **Pixel 6A Compatibility**: This will work perfectly on a Pixel 6A. AGSL was introduced in Android 13, and the Tensor chip in the 6A handles fragment shaders very efficiently.
-- **Vibe Coding Suitability**: Low. Shaders are hard to write via text prompts without visual feedback.
-- **Vibe Implementation**: "Pass an AGSL string to `RuntimeShader` and apply it to a Modifier."
-- **Asset Requirement**: Code only.
-- **Difficulty**: Hard. Requires deep graphics knowledge.
-- **Risks**: Incompatibility with very old devices (pre-Android 13).
+- **Vibe Coding Suitability**: Low. Shaders are mathematically intense and hard to verify without seeing the screen.
+- **Vibe Implementation**: "Jules, write an AGSL shader string that uses `sin(time)` and `pos` to create a rippling water effect. Apply it to the `StickyPuddle` drawing logic using `Modifier.graphicsLayer`."
+- **Asset Requirement**: Code only (procedural graphics).
+- **Difficulty**: Hard. Requires GLSL/AGSL knowledge.
+- **Risks**: High GPU usage if shaders are unoptimized; requires Android 13+.
 
 ### Save-State Serialization
 - **Concept**: Allow "Undo" by keeping the last 3 game states in a stack.
@@ -853,11 +868,11 @@ Each idea includes:
 
 The following ideas were considered but are designated as "Out of Scope" for the current version of the project:
 
-### Asset Bundling / Hot Reload
+**Asset Bundling / Hot Reload**
 - **Reasoning**: The current APK size is under 10MB, which is small enough for standard store updates. Furthermore, the internal API is highly unstable during the "vibe coding" phase. Attempting to hot-reload code or assets would likely lead to frequent crashes and massive technical debt without providing significant value to the player at this scale.
 
-### Real-Time Multiplayer
+**Real-Time Multiplayer**
 - **Reasoning**: Synchronizing a physics-lite hexagonal grid in real-time requires a stable backend and sophisticated lag compensation (e.g., lockstep or rollback). This contradicts the "vibe coding" philosophy of rapid, high-level iteration and would require a total architectural overhaul.
 
-### 3D Perspective Shift (Full 3D)
+**3D Perspective Shift (Full 3D)**
 - **Reasoning**: The current engine is optimized for a 2.5D pseudo-3D perspective using Canvas sorting. Moving to full 3D would require switching to a different rendering engine (like Filament or Unity), making the current Compose-based UI and logic obsolete.
