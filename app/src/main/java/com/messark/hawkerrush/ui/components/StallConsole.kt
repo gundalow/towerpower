@@ -50,7 +50,7 @@ fun StallConsole(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(text = "Target: ${stall.targetMode.name}", color = Color.Cyan, fontSize = 12.sp, modifier = Modifier.clickable { onCycleTarget() })
-                Text(text = "Hits: ${stall.uniqueTargetIds.size} | Kills: ${stall.kills}", color = Color.Green, fontSize = 10.sp)
+                Text(text = "Targets: ${stall.uniqueTargetIds.size} | Kills: ${stall.kills}", color = Color.Green, fontSize = 10.sp)
             }
         }
 
