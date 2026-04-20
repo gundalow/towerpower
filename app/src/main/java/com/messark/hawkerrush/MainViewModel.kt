@@ -17,7 +17,7 @@ class MainViewModel @JvmOverloads constructor(
     private val settingsRepository: SettingsRepository = SettingsRepository(application),
     private val gameStateRepository: GameStateRepository = GameStateRepository(application)
 ) : AndroidViewModel(application) {
-    private val _gameState = MutableStateFlow(GameState())
+    internal val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
 
     private val _logoVisible = MutableStateFlow(true)
@@ -217,7 +217,12 @@ class MainViewModel @JvmOverloads constructor(
         }
     }
 
-    private fun updateGame(currentTimeMs: Long) {
+    /**
+     * Updates game state by advancing spawning, movement, and combat.
+     *
+     * @param currentTimeMs Current game time in milliseconds.
+     */
+    internal fun updateGame(currentTimeMs: Long) {
         _gameState.update { state ->
             var newState = state
 
@@ -304,9 +309,16 @@ class MainViewModel @JvmOverloads constructor(
         return state
     }
 
+    /**
+     * Handles movement for all active enemies and applies puddle effects.
+     *
+     * @param state Current game state.
+     * @param currentTimeMs Current game time.
+     * @return Updated state and list of enemies.
+     */
     private fun handleEnemyMovement(state: GameState, currentTimeMs: Long): Pair<GameState, List<Enemy>> {
         var mutableState = state
-        val affectingStalls = mutableMapOf<AxialCoordinate, MutableSet<String>>()
+        val affectingStalls = mutableMapOf<Pair<AxialCoordinate, String>, MutableSet<String>>()
 
         val updatedEnemies = state.enemies.mapNotNull { enemy ->
             if (enemy.isDead) return@mapNotNull null
@@ -356,8 +368,8 @@ class MainViewModel @JvmOverloads constructor(
                         EnemyType.AUNTIE -> 0.8f // half slow (20% reduction)
                         else -> 0.6f // normal slow (40% reduction)
                     }
-                    puddle.sourceStallCoord?.let { coord ->
-                        affectingStalls.getOrPut(coord) { mutableSetOf() }.add(enemy.id)
+                    if (puddle.sourceStallCoord != null && puddle.sourceStallId != null) {
+                        affectingStalls.getOrPut(puddle.sourceStallCoord to puddle.sourceStallId) { mutableSetOf() }.add(enemy.id)
                     }
                 }
             }
@@ -418,10 +430,13 @@ class MainViewModel @JvmOverloads constructor(
 
         if (affectingStalls.isNotEmpty()) {
             val updatedHexes = mutableState.hexes.toMutableMap()
-            affectingStalls.forEach { (coord, enemyIds) ->
+            affectingStalls.forEach { (source, enemyIds) ->
+                val (coord, stallId) = source
                 updatedHexes[coord]?.stall?.let { stall ->
-                    val newTargetIds = stall.uniqueTargetIds + enemyIds
-                    updatedHexes[coord] = updatedHexes[coord]!!.copy(stall = stall.copy(uniqueTargetIds = newTargetIds))
+                    if (stall.id == stallId) {
+                        val newTargetIds = stall.uniqueTargetIds + enemyIds
+                        updatedHexes[coord] = updatedHexes[coord]!!.copy(stall = stall.copy(uniqueTargetIds = newTargetIds))
+                    }
                 }
             }
             mutableState = mutableState.copy(hexes = updatedHexes)
@@ -430,6 +445,13 @@ class MainViewModel @JvmOverloads constructor(
         return Pair(mutableState, updatedEnemies)
     }
 
+    /**
+     * Checks all stalls to see if they are ready to fire and creates projectiles/puddles.
+     *
+     * @param state Current game state.
+     * @param currentTimeMs Current game time.
+     * @return Updated state with new projectiles/puddles.
+     */
     private fun handleStallFiring(state: GameState, currentTimeMs: Long): GameState {
         val newProjectiles = state.projectiles.toMutableList()
         val newPuddles = state.puddles.toMutableList()
@@ -462,7 +484,8 @@ class MainViewModel @JvmOverloads constructor(
                                 damage = stall.damage,
                                 color = stall.color,
                                 sourceStallType = StallType.CHICKEN_RICE,
-                                sourceStallCoord = coord
+                                sourceStallCoord = coord,
+                                sourceStallId = stall.id
                             ))
                         }
                         StallType.TEH_TARIK -> {
@@ -471,7 +494,8 @@ class MainViewModel @JvmOverloads constructor(
                                 position = target.position,
                                 spawnTimeMs = currentTimeMs,
                                 durationMs = stall.effectDurationMs,
-                                sourceStallCoord = coord
+                                sourceStallCoord = coord,
+                                sourceStallId = stall.id
                             ))
                         }
                         StallType.SATAY -> {
@@ -491,7 +515,8 @@ class MainViewModel @JvmOverloads constructor(
                                 isArc = true,
                                 startPosition = stallPos,
                                 sourceStallType = StallType.SATAY,
-                                sourceStallCoord = coord
+                                sourceStallCoord = coord,
+                                sourceStallId = stall.id
                             ))
                         }
                         StallType.ICE_KACHANG -> {
@@ -505,7 +530,8 @@ class MainViewModel @JvmOverloads constructor(
                                 isFreeze = true,
                                 freezeDurationMs = stall.freezeDurationMs,
                                 sourceStallType = StallType.ICE_KACHANG,
-                                sourceStallCoord = coord
+                                sourceStallCoord = coord,
+                                sourceStallId = stall.id
                             ))
                         }
                         StallType.DURIAN -> {
@@ -518,7 +544,8 @@ class MainViewModel @JvmOverloads constructor(
                                 color = stall.color,
                                 aoeRadius = stall.aoeRadius,
                                 sourceStallType = StallType.DURIAN,
-                                sourceStallCoord = coord
+                                sourceStallCoord = coord,
+                                sourceStallId = stall.id
                             ))
                         }
                     }
@@ -529,6 +556,14 @@ class MainViewModel @JvmOverloads constructor(
         return state.copy(hexes = updatedHexes, projectiles = newProjectiles, puddles = newPuddles)
     }
 
+    /**
+     * Updates projectile positions and handles impacts with enemies.
+     * Also attributes hits and kills to the source stalls.
+     *
+     * @param state Current game state.
+     * @param currentTimeMs Current game time.
+     * @return Updated state after projectile processing.
+     */
     private fun handleProjectiles(state: GameState, currentTimeMs: Long): GameState {
         val finalProjectiles = mutableListOf<Projectile>()
         val hitEnemiesDetails = mutableMapOf<String, MutableList<Projectile>>()
@@ -622,15 +657,18 @@ class MainViewModel @JvmOverloads constructor(
                     maxFreezeDuration = Math.max(maxFreezeDuration, freezeDuration)
 
                     // Track hit and kill
-                    proj.sourceStallCoord?.let { coord ->
+                    if (proj.sourceStallCoord != null && proj.sourceStallId != null) {
+                        val coord = proj.sourceStallCoord
                         updatedHexes[coord]?.stall?.let { stall ->
-                            val isKill = currentHealth <= 0
-                            val newTargetIds = stall.uniqueTargetIds + enemy.id
-                            val newKills = if (isKill) stall.kills + 1 else stall.kills
-                            updatedHexes[coord] = updatedHexes[coord]!!.copy(stall = stall.copy(
-                                uniqueTargetIds = newTargetIds,
-                                kills = newKills
-                            ))
+                            if (stall.id == proj.sourceStallId) {
+                                val isKill = currentHealth <= 0
+                                val newTargetIds = stall.uniqueTargetIds + enemy.id
+                                val newKills = if (isKill) stall.kills + 1 else stall.kills
+                                updatedHexes[coord] = updatedHexes[coord]!!.copy(stall = stall.copy(
+                                    uniqueTargetIds = newTargetIds,
+                                    kills = newKills
+                                ))
+                            }
                         }
                     }
                 }
