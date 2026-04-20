@@ -350,6 +350,16 @@ class MainViewModel @JvmOverloads constructor(
                 speedBoostDuration = Math.max(0, speedBoostDuration - 32)
             }
 
+            state.puddles.forEach { puddle ->
+                if (axialDistance(enemy.position, puddle.position) < 0.8 &&
+                    puddle.sourceStallCoord != null &&
+                    puddle.sourceStallId != null
+                ) {
+                    affectingStalls
+                        .getOrPut(puddle.sourceStallCoord to puddle.sourceStallId) { mutableSetOf() }
+                        .add(enemy.id)
+                }
+            }
             if (isStopped || freezeDuration > 0) {
                 return@mapNotNull enemy.copy(
                     isStopped = isStopped,
@@ -368,9 +378,7 @@ class MainViewModel @JvmOverloads constructor(
                         EnemyType.AUNTIE -> 0.8f // half slow (20% reduction)
                         else -> 0.6f // normal slow (40% reduction)
                     }
-                    if (puddle.sourceStallCoord != null && puddle.sourceStallId != null) {
-                        affectingStalls.getOrPut(puddle.sourceStallCoord to puddle.sourceStallId) { mutableSetOf() }.add(enemy.id)
-                    }
+
                 }
             }
 
