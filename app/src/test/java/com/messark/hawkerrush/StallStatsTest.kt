@@ -10,7 +10,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -20,22 +22,15 @@ import java.util.*
 class StallStatsTest {
     private val testDispatcher = StandardTestDispatcher()
 
-import kotlinx.coroutines.test.resetMain
-import org.junit.After
-
-class StallStatsTest {
-    private val testDispatcher = StandardTestDispatcher()
-
-    `@Before`
+    @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
     }
 
-    `@After`
+    @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
-}
 
     @Test
     fun `stalls track unique hits and kills`() {
@@ -66,10 +61,6 @@ class StallStatsTest {
             path = listOf(AxialCoordinate(0, 0), AxialCoordinate(1, 0), AxialCoordinate(2, 0))
         )
 
-        // We use a private method via reflection or just trigger the game loop?
-        // Let's use reflection to call updateGame if it's private, but wait,
-        // handleProjectiles is what we really want to test.
-
         // Let's manually construct a state and call handleProjectiles
         val state = GameState(
             hexes = mapOf(stallCoord to HexTile(stallCoord, TileType.FLOOR, stall)),
@@ -88,14 +79,19 @@ class StallStatsTest {
         )
 
         // Access handleProjectiles using reflection since it's private
-        val method = MainViewModel::class.java.getDeclaredMethod("handleProjectiles", GameState::class.java, Long::class.java)
+        // Use javaPrimitiveType for the long parameter
+        val method = MainViewModel::class.java.getDeclaredMethod(
+            "handleProjectiles", 
+            GameState::class.java, 
+            Long::class.javaPrimitiveType !!
+        )
         method.isAccessible = true
 
         // 1. First hit
         var newState = method.invoke(viewModel, state, 1000L) as GameState
-        var updatedStall = newState.hexes[stallCoord]?.stall
-        assertEquals(1, updatedStall?.uniqueTargetIds?.size)
-        assertEquals(0, updatedStall?.kills)
+        var updatedStall = newState.hexes[stallCoord]?.stall!!
+        assertEquals(1, updatedStall.uniqueTargetIds.size)
+        assertEquals(0, updatedStall.kills)
         assertEquals(50, newState.enemies[0].health)
 
         // 2. Second hit on SAME enemy (should NOT increment unique hits, but should kill and increment kills)
@@ -114,9 +110,9 @@ class StallStatsTest {
         )
 
         newState = method.invoke(viewModel, state2, 1100L) as GameState
-        updatedStall = newState.hexes[stallCoord]?.stall
-        assertEquals(1, updatedStall?.uniqueTargetIds?.size) // Still 1
-        assertEquals(1, updatedStall?.kills) // Now 1
+        updatedStall = newState.hexes[stallCoord]?.stall!!
+        assertEquals(1, updatedStall.uniqueTargetIds.size) // Still 1
+        assertEquals(1, updatedStall.kills) // Now 1
         assertEquals(0, newState.enemies.size) // Dead
     }
 }
