@@ -41,7 +41,20 @@ jobs:
           prerelease: "${{ github.event_name == 'pull_request_target' }}"
           generate_release_notes: "${{ github.event_name == 'push' }}"
           make_latest: "${{ github.event_name == 'push' }}"
+          draft: true
           files: app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish Release
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ steps.create_release.outputs.id }},
+              draft: false
+            })
 
       - name: Comment PR with Download Link
         if: github.event_name == 'pull_request_target'

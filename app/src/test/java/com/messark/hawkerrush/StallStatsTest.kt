@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.util.*
@@ -44,8 +45,9 @@ class StallStatsTest {
         // Initial state with one stall and one enemy
         val stallCoord = AxialCoordinate(0, 0)
         val enemyId = "enemy1"
+        val stallId = "s1"
         val stall = Stall(
-            id = "s1",
+            id = stallId,
             name = "Chicken Rice",
             cost = 100,
             color = Color.Yellow,
@@ -57,12 +59,12 @@ class StallStatsTest {
             id = enemyId,
             health = 100,
             maxHealth = 100,
-            position = PreciseAxialCoordinate(1f, 0f), // within range (range is 4f)
+            position = PreciseAxialCoordinate(1f, 0f), // within range
             path = listOf(AxialCoordinate(0, 0), AxialCoordinate(1, 0), AxialCoordinate(2, 0))
         )
 
-        // Let's manually construct a state and call handleProjectiles
-        val state = GameState(
+        // Set up initial state manually
+        viewModel._gameState.value = GameState(
             hexes = mapOf(stallCoord to HexTile(stallCoord, TileType.FLOOR, stall)),
             enemies = listOf(enemy),
             projectiles = listOf(
@@ -73,29 +75,24 @@ class StallStatsTest {
                     targetPosition = PreciseAxialCoordinate(1f, 0f),
                     damage = 50,
                     color = Color.Yellow,
-                    sourceStallCoord = stallCoord
+                    sourceStallCoord = stallCoord,
+                    sourceStallId = stallId
                 )
             )
         )
 
-        // Access handleProjectiles using reflection since it's private
-        // Use javaPrimitiveType for the long parameter
-        val method = MainViewModel::class.java.getDeclaredMethod(
-            "handleProjectiles", 
-            GameState::class.java, 
-            Long::class.javaPrimitiveType !!
-        )
-        method.isAccessible = true
-
         // 1. First hit
-        var newState = method.invoke(viewModel, state, 1000L) as GameState
+        viewModel.updateGame(1000L)
+        
+        var newState = viewModel.gameState.value
         var updatedStall = newState.hexes[stallCoord]?.stall!!
         assertEquals(1, updatedStall.uniqueTargetIds.size)
+        assertTrue("Stall should track specific enemyId", updatedStall.uniqueTargetIds.contains(enemyId))
         assertEquals(0, updatedStall.kills)
         assertEquals(50, newState.enemies[0].health)
 
         // 2. Second hit on SAME enemy (should NOT increment unique hits, but should kill and increment kills)
-        val state2 = newState.copy(
+        viewModel._gameState.value = newState.copy(
             projectiles = listOf(
                 Projectile(
                     id = "p2",
@@ -104,15 +101,71 @@ class StallStatsTest {
                     targetPosition = PreciseAxialCoordinate(1f, 0f),
                     damage = 50,
                     color = Color.Yellow,
-                    sourceStallCoord = stallCoord
+                    sourceStallCoord = stallCoord,
+                    sourceStallId = stallId
                 )
             )
         )
 
-        newState = method.invoke(viewModel, state2, 1100L) as GameState
+        viewModel.updateGame(1100L)
+        
+        newState = viewModel.gameState.value
         updatedStall = newState.hexes[stallCoord]?.stall!!
         assertEquals(1, updatedStall.uniqueTargetIds.size) // Still 1
+        assertTrue("Stall should still contain enemyId", updatedStall.uniqueTargetIds.contains(enemyId))
         assertEquals(1, updatedStall.kills) // Now 1
         assertEquals(0, newState.enemies.size) // Dead
+    }
+
+    @Test
+    fun `stalls do not attribute hits if replaced`() {
+        val application = mockk<Application>(relaxed = true)
+        val settingsRepository = mockk<SettingsRepository>()
+        val gameStateRepository = mockk<GameStateRepository>(relaxed = true)
+        every { settingsRepository.settingsFlow } returns kotlinx.coroutines.flow.flowOf(Settings())
+
+        val viewModel = MainViewModel(application, settingsRepository, gameStateRepository)
+
+        val stallCoord = AxialCoordinate(0, 0)
+        val enemyId = "enemy1"
+        val oldStallId = "old_s1"
+        val newStallId = "new_s1"
+        
+        val oldStall = Stall(id = oldStallId, name = "Old Stall", cost = 100, color = Color.Yellow)
+        val newStall = Stall(id = newStallId, name = "New Stall", cost = 100, color = Color.Green)
+
+        val enemy = Enemy(
+            id = enemyId,
+            health = 100,
+            maxHealth = 100,
+            position = PreciseAxialCoordinate(1f, 0f),
+            path = listOf(AxialCoordinate(0, 0), AxialCoordinate(1, 0))
+        )
+
+        // Projectile from OLD stall
+        viewModel._gameState.value = GameState(
+            hexes = mapOf(stallCoord to HexTile(stallCoord, TileType.FLOOR, newStall)), // NEW stall already there
+            enemies = listOf(enemy),
+            projectiles = listOf(
+                Projectile(
+                    id = "p1",
+                    position = PreciseAxialCoordinate(1f, 0f),
+                    targetEnemyId = enemyId,
+                    targetPosition = PreciseAxialCoordinate(1f, 0f),
+                    damage = 50,
+                    color = Color.Yellow,
+                    sourceStallCoord = stallCoord,
+                    sourceStallId = oldStallId
+                )
+            )
+        )
+
+        viewModel.updateGame(1000L)
+        
+        val newState = viewModel.gameState.value
+        val currentStall = newState.hexes[stallCoord]?.stall!!
+        
+        assertEquals(newStallId, currentStall.id)
+        assertEquals("New stall should NOT get hits from old stall projectile", 0, currentStall.uniqueTargetIds.size)
     }
 }
