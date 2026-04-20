@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.IntRect
@@ -36,12 +38,21 @@ fun GameBoard(
     puddles: List<StickyPuddle>,
     visualEffects: List<VisualEffect>,
     selectedBoardStall: AxialCoordinate?,
+    gold: Int,
     onCellClick: (AxialCoordinate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet)
     val stallsSheet = ImageBitmap.imageResource(id = R.drawable.stalls)
     val enemiesSheet = ImageBitmap.imageResource(id = R.drawable.enemies)
+
+    val upgradePaint = remember {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.WHITE
+            textAlign = android.graphics.Paint.Align.CENTER
+            isFakeBoldText = true
+        }
+    }
 
     val hexWidth = 47.dp // Reduced from 48.dp to bring hexes closer
     val hexHeight = hexWidth * 91f / 101f
@@ -303,6 +314,42 @@ fun GameBoard(
                             }
                         ))
                     }
+
+                    // Upgrade Indicator
+                    drawables.add(DrawableEntity(
+                        q = coord.q.toFloat(),
+                        r = coord.r.toFloat(),
+                        zOrder = 11,
+                        draw = {
+                            val canAfford = gold >= stall.getUpgradeCost()
+                            val indicatorColor = if (canAfford) Color.Green else Color.Gray
+                            val indicatorRadius = 7.dp.toPx()
+                            // Positioned at bottom right relative to center (screenPos), moved closer to center
+                            val indicatorPos = Offset(screenPos.x + wPx * 0.25f, screenPos.y + hPx * 0.25f)
+
+                            drawCircle(
+                                color = indicatorColor,
+                                radius = indicatorRadius,
+                                center = indicatorPos
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = indicatorRadius,
+                                center = indicatorPos,
+                                style = Stroke(width = 1.dp.toPx())
+                            )
+
+                            drawIntoCanvas { canvas ->
+                                upgradePaint.textSize = if (stall.upgradeCount > 9) 7.dp.toPx() else 9.dp.toPx()
+                                canvas.nativeCanvas.drawText(
+                                    stall.upgradeCount.toString(),
+                                    indicatorPos.x,
+                                    indicatorPos.y + upgradePaint.textSize / 3f,
+                                    upgradePaint
+                                )
+                            }
+                        }
+                    ))
                 }
             }
 
