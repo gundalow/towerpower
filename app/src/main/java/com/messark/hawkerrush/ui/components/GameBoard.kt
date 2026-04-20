@@ -340,7 +340,7 @@ fun GameBoard(
                             )
 
                             drawIntoCanvas { canvas ->
-                                upgradePaint.textSize = 9.dp.toPx()
+                                upgradePaint.textSize = if (stall.upgradeCount > 9) 7.dp.toPx() else 9.dp.toPx()
                                 canvas.nativeCanvas.drawText(
                                     stall.upgradeCount.toString(),
                                     indicatorPos.x,
