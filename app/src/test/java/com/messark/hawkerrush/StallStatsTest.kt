@@ -20,10 +20,22 @@ import java.util.*
 class StallStatsTest {
     private val testDispatcher = StandardTestDispatcher()
 
-    @Before
+import kotlinx.coroutines.test.resetMain
+import org.junit.After
+
+class StallStatsTest {
+    private val testDispatcher = StandardTestDispatcher()
+
+    `@Before`
     fun setup() {
         Dispatchers.setMain(testDispatcher)
     }
+
+    `@After`
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+}
 
     @Test
     fun `stalls track unique hits and kills`() {
