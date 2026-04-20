@@ -38,6 +38,31 @@ enum class TargetMode {
     FIRST, CLOSEST, STRONGEST, WEAKEST
 }
 
+/**
+ * Represents a hawker stall (tower) in the game.
+ * Stalls can be placed on the board to attack enemies.
+ *
+ * @property id Unique identifier for this specific stall instance.
+ * @property name Display name of the stall.
+ * @property cost Gold cost to purchase the stall.
+ * @property color Color used for the stall's projectile and UI elements.
+ * @property range Attack range in grid units.
+ * @property damage Damage dealt per hit.
+ * @property fireRateMs Time between shots in milliseconds.
+ * @property lastFiredMs Timestamp of the last shot fired.
+ * @property stallType The type of stall, determining its behavior.
+ * @property rotation Rotation angle for direction-based attacks.
+ * @property description Short flavor text and behavior summary.
+ * @property upgradeCount Total number of upgrades applied.
+ * @property upgrades Map of specific upgrade categories to their levels.
+ * @property totalInvestment Total gold spent on this stall (cost + upgrades).
+ * @property targetMode Strategy used to select which enemy to attack.
+ * @property aoeRadius Radius for area-of-effect damage.
+ * @property effectDurationMs Duration of secondary effects (e.g. puddles).
+ * @property freezeDurationMs Duration of freeze effect in milliseconds.
+ * @property uniqueTargetIds Set of enemy IDs that this stall has hit.
+ * @property kills Total number of enemies killed by this stall.
+ */
 data class Stall(
     val id: String,
     val name: String,
@@ -56,7 +81,9 @@ data class Stall(
     val targetMode: TargetMode = TargetMode.FIRST,
     val aoeRadius: Float = 1.0f,
     val effectDurationMs: Long = 3000L,
-    val freezeDurationMs: Long = 500L
+    val freezeDurationMs: Long = 500L,
+    val uniqueTargetIds: Set<String> = emptySet(),
+    val kills: Int = 0
 ) {
     fun getUpgradeCost(): Int {
         val nextUpgradeIndex = upgradeCount + 1
@@ -125,6 +152,26 @@ data class Enemy(
     val isFacingLeft: Boolean = false
 )
 
+/**
+ * Represents a projectile fired by a stall.
+ *
+ * @property id Unique identifier for the projectile.
+ * @property position Current precise axial coordinate.
+ * @property lastPosition Previous position for interpolation.
+ * @property targetEnemyId ID of the target enemy, if any.
+ * @property targetPosition Target coordinates.
+ * @property damage Damage to deal on impact.
+ * @property speed Movement speed in grid units per tick.
+ * @property color Color of the projectile.
+ * @property isFreeze Whether this projectile freezes enemies.
+ * @property aoeRadius Radius of area-of-effect damage.
+ * @property freezeDurationMs Duration of freeze effect.
+ * @property isArc Whether the projectile follows an arc path.
+ * @property startPosition Initial firing position.
+ * @property sourceStallType Type of the stall that fired this.
+ * @property sourceStallCoord Coordinate of the stall that fired this.
+ * @property sourceStallId Unique ID of the stall that fired this.
+ */
 data class Projectile(
     val id: String,
     val position: PreciseAxialCoordinate,
@@ -139,18 +186,32 @@ data class Projectile(
     val freezeDurationMs: Long = 0L,
     val isArc: Boolean = false,
     val startPosition: PreciseAxialCoordinate? = null,
-    val sourceStallType: StallType? = null
+    val sourceStallType: StallType? = null,
+    val sourceStallCoord: AxialCoordinate? = null,
+    val sourceStallId: String? = null
 )
 
 enum class VisualEffectType {
     EXPANDING_CIRCLE, GAS_CLOUD
 }
 
+/**
+ * Represents a sticky puddle (e.g. Teh Tarik) that slows enemies.
+ *
+ * @property id Unique identifier for the puddle.
+ * @property position Precise axial coordinate on the grid.
+ * @property spawnTimeMs Timestamp when the puddle was created.
+ * @property durationMs Total lifespan of the puddle.
+ * @property sourceStallCoord Coordinate of the stall that created this puddle.
+ * @property sourceStallId Unique ID of the stall that created this puddle.
+ */
 data class StickyPuddle(
     val id: String,
     val position: PreciseAxialCoordinate,
     val spawnTimeMs: Long,
-    val durationMs: Long = 3000L
+    val durationMs: Long = 3000L,
+    val sourceStallCoord: AxialCoordinate? = null,
+    val sourceStallId: String? = null
 )
 
 data class VisualEffect(
