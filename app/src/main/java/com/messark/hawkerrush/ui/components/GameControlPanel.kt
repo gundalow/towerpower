@@ -1,9 +1,6 @@
 package com.messark.hawkerrush.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -17,14 +14,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.messark.hawkerrush.R
 import com.messark.hawkerrush.model.Stall
-import com.messark.hawkerrush.model.StallType
-import com.messark.hawkerrush.ui.constants.SpriteConstants
 
 @Composable
 fun GameControlPanel(
@@ -43,7 +36,6 @@ fun GameControlPanel(
     waveActive: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val spriteSheet = ImageBitmap.imageResource(id = R.drawable.sprite_sheet)
     val stallsSheet = ImageBitmap.imageResource(id = R.drawable.stalls)
     val context = LocalContext.current
     val versionName = try {
@@ -91,7 +83,7 @@ fun GameControlPanel(
                 } else if (score > 0 || currentWave > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (currentWave > 0) {
-                            Text(text = "WAVE: $currentWave", color = Color.White, fontSize = 12.sp)
+                            Text(text = "Wave $currentWave", color = Color.White, fontSize = 12.sp)
                         }
                         if (score > 0 && currentWave > 0) {
                             Spacer(modifier = Modifier.width(12.dp))
@@ -138,4 +130,3 @@ fun GameControlPanel(
         }
     }
 }
-

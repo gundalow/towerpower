@@ -83,7 +83,6 @@ class StallStatsTest {
 
         // 1. First hit
         viewModel.updateGame(1000L)
-        
         var newState = viewModel.gameState.value
         var updatedStall = newState.hexes[stallCoord]?.stall!!
         assertEquals(1, updatedStall.uniqueTargetIds.size)
@@ -108,7 +107,6 @@ class StallStatsTest {
         )
 
         viewModel.updateGame(1100L)
-        
         newState = viewModel.gameState.value
         updatedStall = newState.hexes[stallCoord]?.stall!!
         assertEquals(1, updatedStall.uniqueTargetIds.size) // Still 1
@@ -130,7 +128,6 @@ class StallStatsTest {
         val enemyId = "enemy1"
         val oldStallId = "old_s1"
         val newStallId = "new_s1"
-        
         val oldStall = Stall(id = oldStallId, name = "Old Stall", cost = 100, color = Color.Yellow)
         val newStall = Stall(id = newStallId, name = "New Stall", cost = 100, color = Color.Green)
 
@@ -161,10 +158,8 @@ class StallStatsTest {
         )
 
         viewModel.updateGame(1000L)
-        
         val newState = viewModel.gameState.value
         val currentStall = newState.hexes[stallCoord]?.stall!!
-        
         assertEquals(newStallId, currentStall.id)
         assertEquals("New stall should NOT get hits from old stall projectile", 0, currentStall.uniqueTargetIds.size)
     }
