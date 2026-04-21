@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -131,6 +132,7 @@ fun GameControlPanel(
                     StallSlot(
                         stall = stall,
                         isSelected = selectedStall?.id == stall.id,
+                        canAfford = gold >= stall.cost,
                         onClick = { onStallSelected(stall) },
                         stallsSheet = stallsSheet
                     )
@@ -142,6 +144,12 @@ fun GameControlPanel(
             onClick = onStartWave,
             modifier = Modifier.fillMaxWidth().height(40.dp),
             enabled = !waveActive,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4CAF50), // Green for Start
+                contentColor = Color.White,
+                disabledContainerColor = Color.DarkGray,
+                disabledContentColor = Color.Gray
+            ),
             contentPadding = PaddingValues(0.dp)
         ) {
             Text(

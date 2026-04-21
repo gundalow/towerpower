@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -23,6 +25,7 @@ import com.messark.hawkerrush.ui.constants.SpriteConstants
 fun StallSlot(
     stall: Stall,
     isSelected: Boolean,
+    canAfford: Boolean,
     onClick: () -> Unit,
     stallsSheet: ImageBitmap
 ) {
@@ -47,18 +50,21 @@ fun StallSlot(
                     srcOffset = spriteRect.topLeft,
                     srcSize = spriteRect.size,
                     dstOffset = IntOffset.Zero,
-                    dstSize = IntSize(size.width.toInt(), size.height.toInt())
+                    dstSize = IntSize(size.width.toInt(), size.height.toInt()),
+                    colorFilter = if (!canAfford) {
+                        ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+                    } else null
                 )
             }
             Text(
                 text = stall.name,
-                color = Color.White,
+                color = if (canAfford) Color.White else Color.Gray,
                 fontSize = 8.sp,
                 maxLines = 1
             )
             Text(
                 text = "$${stall.cost}",
-                color = Color.Yellow,
+                color = if (canAfford) Color.Yellow else Color.Red,
                 fontSize = 9.sp,
                 maxLines = 1
             )
