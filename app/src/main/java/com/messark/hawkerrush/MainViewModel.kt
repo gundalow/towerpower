@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.messark.hawkerrush.logic.EnemyBehaviorHandler
 import com.messark.hawkerrush.logic.StallActionHandler
 import com.messark.hawkerrush.model.*
+import com.messark.hawkerrush.model.FireResult
 import com.messark.hawkerrush.ui.constants.EnemyData
+import com.messark.hawkerrush.ui.constants.GameConstants
 import com.messark.hawkerrush.ui.constants.StallData
 import com.messark.hawkerrush.ui.constants.StallConstants // Import StallConstants
 import com.messark.hawkerrush.ui.constants.StallUpgradeCategory // Import StallUpgradeCategory
@@ -17,19 +19,6 @@ import kotlinx.coroutines.flow.*
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.*
-
-// Global constants for game mechanics and parameters
-object GameConstants {
-    const val GAME_TICK_DURATION_MS = 32L
-    const val ENEMY_SPAWN_INTERVAL_MS = 1000L
-    const val DELIVERY_RIDER_WAVE_LIMIT = 30
-    const val ENEMY_GENERATION_ATTEMPTS_LIMIT = 100
-    const val INITIAL_ENEMY_BUDGET_WAVE_6 = 883.0
-    const val ENEMY_BUDGET_MULTIPLIER_NORMAL = 1.2
-    const val ENEMY_BUDGET_MULTIPLIER_BOSS = 1.44
-    const val SPEED_BOOST_MULTIPLIER = 1.5f // Added constant for speed boost
-    const val PUDDLE_EFFECT_RADIUS_THRESHOLD = 0.8f // Threshold for enemy proximity to puddle
-}
 
 class MainViewModel @JvmOverloads constructor(
     application: Application,
@@ -260,7 +249,7 @@ class MainViewModel @JvmOverloads constructor(
                 enemyList.add(type)
                 remainingBudget -= hp
             } else if (allowedTiers.all { EnemyData.configs[it]?.let { config -> EnemyBehaviorHandler.getEnemyHpForWave(config, wave) } ?: 0 > remainingBudget }) {
-                break
+                remainingBudget = 0.0 // Exit while loop
             }
             attempts++
         }
@@ -425,7 +414,7 @@ class MainViewModel @JvmOverloads constructor(
             state.puddles.forEach { puddle ->
                 if (axialDistance(enemy.position, puddle.position) < GameConstants.PUDDLE_EFFECT_RADIUS_THRESHOLD) { // Use constant
                     // Use EnemyBehaviorHandler for slow multiplier
-                    speedMultiplier = EnemyBehaviorHandler.getPuddleSlowMultiplier(enemyConfig, enemy.type)
+                    speedMultiplier = EnemyBehaviorHandler.getPuddleSlowMultiplier(enemy.type)
                 }
             }
 
@@ -512,7 +501,7 @@ class MainViewModel @JvmOverloads constructor(
         val newPuddles = state.puddles.toMutableList()
         val updatedHexes = state.hexes.toMutableMap()
 
-        state.hexes.forEach { (coord, tile) ->
+        for ((coord, tile) in state.hexes) {
             val stall = tile.stall
             if (stall != null && currentTimeMs - stall.lastFiredMs >= stall.fireRateMs) {
                 val stallPos = PreciseAxialCoordinate(coord.q.toFloat(), coord.r.toFloat())
@@ -571,7 +560,7 @@ class MainViewModel @JvmOverloads constructor(
             }
 
             val dq = targetPos.q - proj.position.q
-            val dr = target.position.r - proj.position.r
+            val dr = targetPos.r - proj.position.r
             val dist = axialDistance(proj.position, targetPos)
 
             if (dist < proj.speed) {
@@ -732,13 +721,12 @@ class MainViewModel @JvmOverloads constructor(
                     if (canRepathAll) {
                         val newHexes = currentState.hexes.toMutableMap()
                         // Use StallActionHandler to create stall instance
-                        val stallConfig = StallData.configs[stallToPlace.stallType] ?: return@update // Should not happen
+                        val stallConfig = StallData.configs[stallToPlace.stallType] ?: return
                         newHexes[coord] = tile.copy(stall = StallActionHandler.createStallInstance(stallConfig))
 
-                        _gameState.update { state ->
-                            val updatedEnemies = recalculateEnemyPaths(state, blocked, newHexes)
-                            state.copy(hexes = newHexes, gold = state.gold - stallToPlace.cost, enemies = updatedEnemies)
-                        }
+                        val updatedEnemies = recalculateEnemyPaths(currentState, blocked, newHexes)
+                        _gameState.update { it.copy(hexes = newHexes, gold = it.gold - stallToPlace.cost, enemies = updatedEnemies) }
+                        return
                     }
                 }
             }
@@ -778,7 +766,7 @@ class MainViewModel @JvmOverloads constructor(
             val stall = tile.stall ?: return@update state
 
             // Use StallData to get config for base stats
-            val stallConfig = StallData.configs[stall.stallType] ?: return@update // Should not happen
+            val stallConfig = StallData.configs[stall.stallType] ?: return@update state // Should not happen
             // Get base stall for upgrade calculations (this might need refinement if base stats differ)
             // For now, we assume stallConfig provides the base stats needed for getUpgradeCost
             val baseStallForUpgradeCalc = stallConfig // This might need to be a specific StallDefinition if logic differs
