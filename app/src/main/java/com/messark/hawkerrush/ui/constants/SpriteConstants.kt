@@ -55,4 +55,8 @@ object SpriteConstants {
     val BTN_SAVE_RECT = IntRect(0, 649, 350, 744)
     val BTN_CANCEL_RECT = IntRect(0, 743, 350, 838)
     val BTN_CANCEL_CLICK_RECT = IntRect(0, 837, 350, 932)
+    val BTN_UPGRADE_RECT = IntRect(350, 1, 700, 96)
+    val BTN_START_RECT = IntRect(350, 182, 700, 277)
+    val BTN_SELL_RECT = IntRect(350, 369, 700, 463)
+    val BTN_TARGET_RECT = IntRect(350, 555, 700, 650)
 }
