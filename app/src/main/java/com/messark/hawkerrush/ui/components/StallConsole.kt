@@ -50,7 +50,7 @@ fun StallConsole(
                     Text(text = "No upgrades", color = Color.Gray, fontSize = 10.sp)
                 } else {
                     val upgradeText = stall.upgrades.entries.joinToString(", ") { (key, value) ->
-                        val benefit = stall.getUpgradeBenefit(key, value, baseStall)
+                        val benefit = stall.getUpgradeBenefit(key, value)
                         if (benefit.isNotEmpty()) "$key: $value ($benefit)" else "$key: $value"
                     }
                     Text(text = upgradeText, color = Color.Gray, fontSize = 10.sp)
@@ -81,7 +81,7 @@ fun StallConsole(
                     modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
-            
+
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 SpriteButton(
                     normalRect = SpriteConstants.BTN_UPGRADE_RECT,

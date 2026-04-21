@@ -100,7 +100,7 @@ fun GameControlPanel(
                             modifier = Modifier
                                 .size(24.dp)
                                 .border(1.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
-                                .clickable { 
+                                .clickable {
                                     onShowStallTutorial(selectedStall.stallType)
                                     onTriggerHaptic()
                                 },
