@@ -2,9 +2,8 @@ package com.messark.hawkerrush.logic
 
 import androidx.compose.ui.graphics.Color
 import com.messark.hawkerrush.model.*
-import com.messark.hawkerrush.registry.FireResult
+import com.messark.hawkerrush.ui.constants.StallConfig
 import com.messark.hawkerrush.ui.constants.StallData
-import com.messark.hawkerrush.ui.constants.EnemyData
 import java.util.*
 
 /**
@@ -54,7 +53,7 @@ object StallActionHandler {
                         currentRange *= 1.25f
                     }
                 }
-                "+${String.format("%.1f", currentRange - stallConfig.range)}"
+                "+${String.format(Locale.US, "%.1f", currentRange - stallConfig.range)}"
             }
             "Radius" -> {
                 var currentRadius = stallConfig.aoeRadius
@@ -64,7 +63,7 @@ object StallActionHandler {
                         currentRadius *= 1.25f
                     }
                 }
-                "+${String.format("%.1f", currentRadius - stallConfig.aoeRadius)}"
+                "+${String.format(Locale.US, "%.1f", currentRadius - stallConfig.aoeRadius)}"
             }
             "Duration" -> {
                 var currentDuration = stallConfig.effectDurationMs
@@ -93,7 +92,7 @@ object StallActionHandler {
     /**
      * Calculates the damage increase from upgrades for Chicken Rice.
      */
-    private fun getUpgradeDamageIncrease(baseDamage: Int): Int {
+    fun getUpgradeDamageIncrease(baseDamage: Int): Int {
         return (baseDamage * 0.3f).toInt() + 2
     }
 
@@ -198,7 +197,8 @@ object StallActionHandler {
                     sourceStallType = stallConfig.type,
                     sourceStallCoord = stallCoord,
                     sourceStallId = stall.id
-                )
+                ),
+                updatedStall = stall
             )
         }
     }
@@ -237,85 +237,6 @@ object StallActionHandler {
             legendaryPrefix = initialLegendaryPrefix,
             legendarySuffix = initialLegendarySuffix,
             namingCategories = initialNamingCategories
-        )
-    }
-}
-
-/**
- * Handles actions and logic related to enemies.
- */
-object EnemyBehaviorHandler {
-
-    /**
-     * Updates enemy behavior, including special actions like stopping for tourists.
-     * This logic was previously in EnemyDefinition.updateSpecialBehavior().
-     */
-    fun updateSpecialBehavior(enemyConfig: EnemyConfig, enemy: Enemy, currentTimeMs: Long): Enemy {
-        if (enemyConfig.type == EnemyType.TOURIST) {
-            var isStopped = enemy.isStopped
-            var stopDurationMs = enemy.stopDurationMs
-            var lastStopMs = enemy.lastStopMs
-
-            if (isStopped) {
-                stopDurationMs -= 32 // Game tick duration
-                if (stopDurationMs <= 0) {
-                    isStopped = false
-                    lastStopMs = currentTimeMs
-                }
-            } else if (currentTimeMs - lastStopMs > 8000) { // Cooldown before stopping again
-                isStopped = true
-                stopDurationMs = 2000L // Duration of the stop
-            }
-            return enemy.copy(isStopped = isStopped, stopDurationMs = stopDurationMs, lastStopMs = lastStopMs)
-        }
-        return enemy
-    }
-
-    /**
-     * Calculates the slow multiplier for enemies when they are in a puddle.
-     * This logic was previously in EnemyDefinition.getPuddleSlowMultiplier().
-     */
-    fun getPuddleSlowMultiplier(enemyConfig: EnemyConfig, enemyType: EnemyType): Float {
-        return when (enemyType) {
-            EnemyType.DELIVERY_RIDER -> 0.2f
-            EnemyType.AUNTIE -> 0.8f
-            else -> 0.6f
-        }
-    }
-
-    /**
-     * Calculates the current HP of an enemy based on the wave number.
-     * This logic was previously in EnemyDefinition.getHp().
-     */
-    fun getEnemyHpForWave(enemyConfig: EnemyConfig, wave: Int): Int {
-        return (enemyConfig.baseHp * Math.pow(1.1, (wave - 1).toDouble())).toInt()
-    }
-
-    /**
-     * Creates an Enemy instance from its configuration.
-     * This logic was previously in EnemyDefinition.toEnemy().
-     */
-    fun createEnemyInstance(
-        enemyConfig: EnemyConfig,
-        id: String = UUID.randomUUID().toString(),
-        wave: Int,
-        position: PreciseAxialCoordinate,
-        path: List<AxialCoordinate>,
-        isFacingLeft: Boolean
-    ): Enemy {
-        val hp = getEnemyHpForWave(enemyConfig, wave)
-        return Enemy(
-            id = id,
-            type = enemyConfig.type,
-            health = hp,
-            maxHealth = hp,
-            position = position,
-            baseSpeed = enemyConfig.baseSpeed,
-            currentSpeed = enemyConfig.baseSpeed,
-            path = path,
-            currentPathIndex = 0,
-            reward = enemyConfig.reward,
-            isFacingLeft = isFacingLeft
         )
     }
 }

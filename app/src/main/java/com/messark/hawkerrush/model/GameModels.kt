@@ -1,7 +1,8 @@
 package com.messark.hawkerrush.model
 
 import androidx.compose.ui.graphics.Color
-import com.messark.hawkerrush.registry.StallRegistry
+import com.messark.hawkerrush.logic.StallActionHandler
+import com.messark.hawkerrush.ui.constants.StallData
 
 data class AxialCoordinate(val q: Int, val r: Int)
 
@@ -101,9 +102,14 @@ data class Stall(
 
     fun getUpgradeBenefit(category: String, level: Int): String {
         if (level <= 0) return ""
-        val stallDef = StallRegistry.get(stallType)
-        return stallDef.getUpgradeBenefit(category, level, stallDef)
+        val stallConfig = StallData.configs[stallType] ?: return ""
+        return StallActionHandler.getUpgradeBenefit(stallConfig, category, level)
     }
+}
+
+sealed class FireResult {
+    data class NewProjectile(val projectile: Projectile, val updatedStall: Stall) : FireResult()
+    data class NewPuddle(val puddle: StickyPuddle) : FireResult()
 }
 
 enum class EnemyType {

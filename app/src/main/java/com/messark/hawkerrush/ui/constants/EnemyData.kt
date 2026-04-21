@@ -1,7 +1,5 @@
 package com.messark.hawkerrush.ui.constants
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.IntRect
 import com.messark.hawkerrush.model.*
 
 // Constants related to enemy behavior and balance
@@ -68,11 +66,6 @@ object EnemyData {
             baseHp = 500,
             baseSpeed = 0.06f,
             reward = 100,
-            spriteRow = 3
-        )
-    )
-}
-           reward = 100,
             spriteRow = 3
         )
     )

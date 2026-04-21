@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.messark.hawkerrush.model.Stall
-import com.messark.hawkerrush.registry.StallRegistry
+import com.messark.hawkerrush.ui.constants.StallData
+import androidx.compose.ui.unit.IntRect
 
 @Composable
 fun StallSlot(
@@ -28,7 +29,7 @@ fun StallSlot(
     onClick: () -> Unit,
     stallsSheet: ImageBitmap
 ) {
-    val spriteRect = StallRegistry.get(stall.stallType).spriteRect
+    val spriteRect = StallData.configs[stall.stallType]?.spriteRect ?: IntRect.Zero
 
     Box(
         modifier = Modifier
