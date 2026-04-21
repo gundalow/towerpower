@@ -63,6 +63,9 @@ fun SpriteButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val context = LocalContext.current
+    val disabledColorFilter = remember {
+        ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+    }
     val bitmap = remember {
         BitmapFactory.decodeResource(context.resources, R.drawable.buttons).asImageBitmap()
     }
@@ -88,9 +91,7 @@ fun SpriteButton(
                 srcOffset = IntOffset(currentRect.left, currentRect.top),
                 srcSize = IntSize(currentRect.width, currentRect.height),
                 dstSize = IntSize(size.width.toInt(), size.height.toInt()),
-                colorFilter = if (!enabled) {
-                    ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
-                } else null
+                colorFilter = if (!enabled) disabledColorFilter else null
             )
         }
     }
@@ -620,6 +621,7 @@ fun GameScreen(
                     onCycleTargetMode = { viewModel.cycleTargetMode() },
                     onStartWave = { viewModel.startWave() },
                     onShowStallTutorial = { viewModel.showStallTutorial(it) },
+                    onTriggerHaptic = { viewModel.triggerHaptic() },
                     waveActive = gameState.waveActive,
                     modifier = Modifier.weight(LayoutConstants.CONTROL_PANEL_HEIGHT_FRACTION)
                 )

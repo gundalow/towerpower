@@ -14,8 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.messark.hawkerrush.MainActivity
+import com.messark.hawkerrush.SpriteButton
 import com.messark.hawkerrush.model.Stall
 import com.messark.hawkerrush.model.StallType
+import com.messark.hawkerrush.ui.constants.SpriteConstants
 
 @Composable
 fun StallConsole(
@@ -24,6 +27,7 @@ fun StallConsole(
     onSell: () -> Unit,
     onUpgrade: () -> Unit,
     onCycleTarget: () -> Unit,
+    onTriggerHaptic: () -> Unit,
     canAffordUpgrade: Boolean,
     upgradeCost: Int,
     modifier: Modifier = Modifier
@@ -53,32 +57,39 @@ fun StallConsole(
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(text = "Target: ${stall.targetMode.name}", color = Color.Cyan, fontSize = 12.sp, modifier = Modifier.clickable { onCycleTarget() })
+                Text(text = "Target: ${stall.targetMode.name}", color = Color.Cyan, fontSize = 12.sp, modifier = Modifier.clickable { onCycleTarget(); onTriggerHaptic() })
                 Text(text = "Targets: ${stall.uniqueTargetIds.size} | Kills: ${stall.kills}", color = Color.Green, fontSize = 10.sp)
             }
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
-                onClick = onSell,
-                modifier = Modifier.weight(1f).height(36.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Text(text = "SELL $${(stall.totalInvestment * 0.5f).toInt()}", fontSize = 10.sp)
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                SpriteButton(
+                    normalRect = SpriteConstants.BTN_SELL_RECT,
+                    onClick = onSell,
+                    onTriggerHaptic = onTriggerHaptic,
+                    modifier = Modifier.fillMaxWidth().height(36.dp)
+                )
+                Text(
+                    text = "SELL $${(stall.totalInvestment * 0.5f).toInt()}",
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
             }
-            Button(
-                onClick = onUpgrade,
-                modifier = Modifier.weight(1f).height(36.dp),
-                enabled = canAffordUpgrade,
-                colors = ButtonDefaults.buttonColors(
-                    disabledContainerColor = Color.DarkGray,
-                    disabledContentColor = Color.Gray
-                ),
-                contentPadding = PaddingValues(0.dp)
-            ) {
+            
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                SpriteButton(
+                    normalRect = SpriteConstants.BTN_UPGRADE_RECT,
+                    onClick = onUpgrade,
+                    onTriggerHaptic = onTriggerHaptic,
+                    enabled = canAffordUpgrade,
+                    modifier = Modifier.fillMaxWidth().height(36.dp)
+                )
                 Text(
                     text = buildAnnotatedString {
                         append("UPGRADE ")
@@ -86,15 +97,24 @@ fun StallConsole(
                             append("$$upgradeCost")
                         }
                     },
-                    fontSize = 10.sp
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
-            Button(
-                onClick = onCycleTarget,
-                modifier = Modifier.weight(1f).height(36.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Text(text = "TARGET", fontSize = 10.sp)
+
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                SpriteButton(
+                    normalRect = SpriteConstants.BTN_TARGET_RECT,
+                    onClick = onCycleTarget,
+                    onTriggerHaptic = onTriggerHaptic,
+                    modifier = Modifier.fillMaxWidth().height(36.dp)
+                )
+                Text(
+                    text = "TARGET",
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
             }
         }
     }
