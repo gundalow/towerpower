@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.messark.hawkerrush.logic.EnemyBehaviorHandler
 import com.messark.hawkerrush.logic.StallActionHandler
 import com.messark.hawkerrush.model.*
+// Removed unused import: import com.messark.hawkerrush.registry.*
 import com.messark.hawkerrush.ui.constants.EnemyData
 import com.messark.hawkerrush.ui.constants.StallData
 import com.messark.hawkerrush.ui.constants.StallConstants // Import StallConstants
@@ -27,7 +28,6 @@ object GameConstants {
     const val INITIAL_ENEMY_BUDGET_WAVE_6 = 883.0
     const val ENEMY_BUDGET_MULTIPLIER_NORMAL = 1.2
     const val ENEMY_BUDGET_MULTIPLIER_BOSS = 1.44
-    const val SPEED_BOOST_MULTIPLIER = 1.5f // Added constant for speed boost
 }
 
 class MainViewModel @JvmOverloads constructor(
