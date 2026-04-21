@@ -63,7 +63,7 @@ fun StallSlot(
                 maxLines = 1
             )
             Text(
-                text = "$${stall.cost}",
+                text = "\$${stall.cost}",
                 color = if (canAfford) Color.Yellow else Color.Red,
                 fontSize = 9.sp,
                 maxLines = 1

@@ -75,7 +75,7 @@ fun StallConsole(
                     modifier = Modifier.fillMaxWidth().height(36.dp)
                 )
                 Text(
-                    text = "SELL $${(stall.totalInvestment * 0.5f).toInt()}",
+                    text = "SELL \$${(stall.totalInvestment * 0.5f).toInt()}",
                     color = Color.White,
                     fontSize = 9.sp,
                     modifier = Modifier.padding(bottom = 2.dp)
@@ -94,7 +94,7 @@ fun StallConsole(
                     text = buildAnnotatedString {
                         append("UPGRADE ")
                         withStyle(style = SpanStyle(color = if (canAffordUpgrade) Color.Yellow else Color.Red)) {
-                            append("$$upgradeCost")
+                            append("\$$upgradeCost")
                         }
                     },
                     fontSize = 9.sp,
