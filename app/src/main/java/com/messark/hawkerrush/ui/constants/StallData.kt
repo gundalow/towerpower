@@ -8,6 +8,7 @@ import com.messark.hawkerrush.model.*
 object StallConstants {
     const val SELL_REFUND_PERCENTAGE = 0.5f
     const val LEGENDARY_NAME_LEVEL_THRESHOLD = 10
+    const val MIN_FIRE_RATE_MS = 50L // Minimum fire rate for stalls
 }
 
 // Enum for upgrade categories to improve clarity
@@ -125,13 +126,4 @@ object StallData {
         )
     )
 }
-s, aimed precisely at the lead enemy. Upon impact, it doesn't just damage; it delivers an Absolute Zero Brain Freeze. The target is frozen solid, encased in a giant colorful ice cube, completely immobilized for several precious seconds. A perfect stall for controlling boss units.",
-            spriteRect = IntRect(358, 500, 666, 930),
-            freezeDurationMs = 500L
-        )
-    )
-}
- 500L
-        )
-    )
-}
+

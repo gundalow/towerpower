@@ -28,6 +28,7 @@ object GameConstants {
     const val ENEMY_BUDGET_MULTIPLIER_NORMAL = 1.2
     const val ENEMY_BUDGET_MULTIPLIER_BOSS = 1.44
     const val SPEED_BOOST_MULTIPLIER = 1.5f // Added constant for speed boost
+    const val PUDDLE_EFFECT_RADIUS_THRESHOLD = 0.8f // Threshold for enemy proximity to puddle
 }
 
 class MainViewModel @JvmOverloads constructor(
@@ -401,7 +402,7 @@ class MainViewModel @JvmOverloads constructor(
             var lastStopMs = updatedEnemy.lastStopMs
 
             state.puddles.forEach { puddle ->
-                if (axialDistance(enemy.position, puddle.position) < 0.8 &&
+                if (axialDistance(enemy.position, puddle.position) < GameConstants.PUDDLE_EFFECT_RADIUS_THRESHOLD && // Use constant
                     puddle.sourceStallCoord != null &&
                     puddle.sourceStallId != null
                 ) {
@@ -422,14 +423,14 @@ class MainViewModel @JvmOverloads constructor(
 
             var speedMultiplier = 1.0f
             state.puddles.forEach { puddle ->
-                if (axialDistance(enemy.position, puddle.position) < 0.8) {
+                if (axialDistance(enemy.position, puddle.position) < GameConstants.PUDDLE_EFFECT_RADIUS_THRESHOLD) { // Use constant
                     // Use EnemyBehaviorHandler for slow multiplier
                     speedMultiplier = EnemyBehaviorHandler.getPuddleSlowMultiplier(enemyConfig, enemy.type)
                 }
             }
 
             if (speedBoostDuration > 0) {
-                speedMultiplier *= 1.5f // This 1.5f is a specific multiplier, could be constant if tunable
+                speedMultiplier *= GameConstants.SPEED_BOOST_MULTIPLIER // Use constant
             }
 
             val effectiveSpeed = enemy.baseSpeed * speedMultiplier
@@ -838,7 +839,7 @@ class MainViewModel @JvmOverloads constructor(
                                 potentialRate = Math.round(potentialRate * 0.75)
                             }
 
-                            if (potentialRate < 50L) { // Minimum fire rate constant
+                            if (potentialRate < StallConstants.MIN_FIRE_RATE_MS) { // Minimum fire rate constant
                                 continue // Try another category
                             }
 

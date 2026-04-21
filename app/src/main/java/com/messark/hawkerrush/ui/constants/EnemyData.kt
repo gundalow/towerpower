@@ -1,12 +1,14 @@
 package com.messark.hawkerrush.ui.constants
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntRect
 import com.messark.hawkerrush.model.*
 
 // Constants related to enemy behavior and balance
 object EnemyConstants {
-    // These are now handled per-enemy in EnemyConfig
-    // const val TOURIST_COOLDOWN_MS = 8000L
-    // const val TOURIST_STOP_DURATION_MS = 2000L
+    // These are now handled per-enemy in EnemyConfig, but fallbacks are useful
+    const val DEFAULT_TOURIST_COOLDOWN_MS = 8000L
+    const val DEFAULT_TOURIST_STOP_DURATION_MS = 2000L
     // HP scaling per wave is fundamental to enemy progression.
     // It could be here or within EnemyConfig if intended to be per-enemy tunable.
     // For now, let's assume a global HP scaling factor.
@@ -70,3 +72,9 @@ object EnemyData {
         )
     )
 }
+           reward = 100,
+            spriteRow = 3
+        )
+    )
+}
+
