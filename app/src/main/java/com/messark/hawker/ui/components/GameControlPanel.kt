@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.messark.hawker.R
@@ -99,7 +100,8 @@ fun GameControlPanel(
                     fillColor = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -115,7 +117,10 @@ fun GameControlPanel(
                 if (selectedStall != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp)
                     ) {
                         Text(
                             text = selectedStall.description,
@@ -149,8 +154,17 @@ fun GameControlPanel(
                             )
                         }
                     }
-                } else if (score > 0) {
-                    Text(text = "SCORE: $score", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                } else if (score >= 0) {
+                    Text(
+                        text = "SCORE: $score",
+                        color = Color.Black,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(Alignment.CenterVertically)
+                    )
                 }
             }
 
