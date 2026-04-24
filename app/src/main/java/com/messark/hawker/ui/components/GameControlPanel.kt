@@ -135,7 +135,18 @@ fun GameControlPanel(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "?", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = "?",
+                                color = Color.Black,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                style = androidx.compose.ui.text.TextStyle(
+                                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(
+                                        includeFontPadding = false
+                                    )
+                                ),
+                                modifier = Modifier.offset(y = (-1).dp)
+                            )
                         }
                     }
                 } else if (score > 0) {
