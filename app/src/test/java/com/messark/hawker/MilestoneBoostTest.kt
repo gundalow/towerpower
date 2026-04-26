@@ -40,18 +40,18 @@ class MilestoneBoostTest {
             cost = 100,
             color = Color.Yellow,
             stallType = StallType.CHICKEN_RICE,
-            damage = 15
+            damage = 10
         )
 
-        // Level 9: 15 + 9 * ( (15*0.3).toInt() + 2 ) = 15 + 9 * 6 = 69
-        // Increase is 54. 54/15 = 3.6 -> 360%
+        // Level 9: 10 + 9 * ( (10*0.3).toInt() + 2 ) = 10 + 9 * 5 = 55
+        // Increase is 45. 45/10 = 4.5 -> 450%
         val benefit9 = baseStall.getUpgradeBenefit("Damage", 9)
-        assertEquals("+360%", benefit9)
+        assertEquals("+450%", benefit9)
 
-        // Level 10: (15 + 10 * 6) * 1.25 = 75 * 1.25 = 93.75 -> 94
-        // Increase is 94 - 15 = 79. 79/15 = 5.266... -> 527%
+        // Level 10: (10 + 10 * 5) * 1.25 = 60 * 1.25 = 75
+        // Increase is 75 - 10 = 65. 65/10 = 6.5 -> 650%
         val benefit10 = baseStall.getUpgradeBenefit("Damage", 10)
-        assertEquals("+527%", benefit10)
+        assertEquals("+650%", benefit10)
     }
 
     @Test
@@ -64,15 +64,15 @@ class MilestoneBoostTest {
         val viewModel = MainViewModel(application, settingsRepository, gameStateRepository)
 
         val stallCoord = AxialCoordinate(0, 0)
-        // Base damage 15. Increase per level 6.
-        // Damage at level 9 = 15 + 9 * 6 = 69.
+        // Base damage 10. Increase per level 5.
+        // Damage at level 9 = 10 + 9 * 5 = 55.
         val stall = Stall(
             id = "s1",
             name = "Chicken Rice",
             cost = 100,
             color = Color.Yellow,
             stallType = StallType.CHICKEN_RICE,
-            damage = 69,
+            damage = 55,
             upgrades = mapOf("Damage" to 9),
             upgradeCount = 9
         )
@@ -94,8 +94,8 @@ class MilestoneBoostTest {
 
         val upgradedStall = viewModel.gameState.value.hexes[stallCoord]?.stall!!
         assertEquals(10, upgradedStall.upgrades["Damage"])
-        // (69 + 6) * 1.25 = 75 * 1.25 = 93.75 -> 94
-        assertEquals(94, upgradedStall.damage)
+        // (55 + 5) * 1.25 = 60 * 1.25 = 75
+        assertEquals(75, upgradedStall.damage)
     }
 
     @Test

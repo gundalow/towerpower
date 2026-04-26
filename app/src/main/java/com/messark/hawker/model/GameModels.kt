@@ -77,7 +77,7 @@ data class Stall(
     val baseName: String = name,
     val cost: Int,
     val color: Color,
-    val range: Float = 3f, // Grid units
+    val range: Float = 10f, // Grid units
     val damage: Int = 10,
     val fireRateMs: Long = 1000L,
     val lastFiredMs: Long = 0L,
